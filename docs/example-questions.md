@@ -23,6 +23,16 @@ tracked in [../catalog/chapters-todo.md](../catalog/chapters-todo.md).
 
 The capability worth showing off, and the least discoverable. Only these four assets support it.
 
+**You do not have to ask for a timestamp.** `find_demo` scores every chapter label against the
+question and hands the agent an explicit `recommendedStartSeconds`. So an ordinary topical
+question lands on the relevant moment by itself: "How do I track agent performance and
+coaching?" opens Performance Management at 0:25, not at the title card.
+
+This is deliberately decided in the tool, not by the model. Earlier the agent sent a position
+only sometimes, so the same question opened mid-video or from the start depending on the run.
+Where scores are close the ranking also prefers an asset it can navigate, on the basis that
+forty seconds to the relevant screen beats minute zero of a thirty-minute session.
+
 ### CXone Agent Copilot, 1:36
 
 | Ask | Lands at |
@@ -78,7 +88,7 @@ The capability worth showing off, and the least discoverable. Only these four as
 |---|---|
 | "What does the supervisor experience look like?" | Supervisor Workspace, 2:15 |
 | "How do supervisors manage human and AI agents together?" | How Supervisors Manage Human and AI Agents, 11:13 |
-| "How do I track agent performance and coaching?" | Performance Management, 4:53 |
+| "How do I track agent performance and coaching?" | Performance Management, opens at **0:25** on the per-agent metrics table |
 | "How do you measure a hybrid human and AI workforce?" | Managing the Hybrid Workforce, 5:06 |
 | "Can you score every interaction instead of sampling?" | Quality Auto Scoring and GenAI Evaluation, 14:56 |
 | "How does quality management work with generative AI?" | Quality Auto Scoring and GenAI Evaluation, 14:56 |
