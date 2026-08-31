@@ -1,0 +1,30 @@
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# CREDENTIALS. The Cognigy endpoint URL token is all anyone needs to talk to the agent and
+# spend the LLM budget. Never commit these, especially to a public repository.
+.env
+.env.*
+!.env.example
+
+# Operational record of the live Cognigy deployment: NiCE tenant, project, agent, flow and
+# LLM identifiers. Deliberately kept local. Tenant identifiers are confidential and must not
+# be published.
+cognigy/deployed.md
+
+# Machine-specific: contains absolute paths to the local Node install, so it is wrong for
+# anyone else and would break their preview.
+.claude/
+
+# Demo media lives outside this directory in ../Resources and is NOT part of this repo.
+# The videos are NiCE marketing assets that have not been approved for external distribution.
+*.mp4
+*.mov
+*.webm
+
+# OS and OneDrive noise
+Thumbs.db
+desktop.ini
+.DS_Store

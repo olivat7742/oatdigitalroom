@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nice.internal/digital-room/demo-catalog.schema.json",
+  "title": "Digital Room demo catalog",
+  "description": "The curated inventory of showable assets. This file is the core asset of the project: retrieval quality depends far more on this metadata than on the model. All content is public and shown to every audience, so there is no tiering; the only content gate is the approved flag.",
+  "type": "object",
+  "required": ["version", "assets"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "string" },
+    "updated": { "type": "string", "format": "date" },
+    "notes": { "type": "string", "description": "Free text about the state of this catalog file. Not consumed at runtime." },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/asset" }
+    },
+    "tours": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/tour" }
+    }
+  },
+  "definitions": {
+    "asset": {
+      "type": "object",
+      "required": ["id", "title", "summary", "type", "approved", "products", "useCases", "personas", "depth", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Stable kebab-case id. Referenced by tours, followUps and stage directives, so never renumber or reuse."
+        },
+        "title": { "type": "string" },
+        "summary": {
+          "type": "string",
+          "description": "One or two sentences describing what the visitor will see. This text is what retrieval matches against, so write it in the visitor's language, not internal shorthand."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["video", "walkthrough", "diagram", "comparison", "document"]
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Cleared for external use. All Digital Room content is public for every audience, so this is the single content gate in the system. An asset with approved:false must never be retrievable at runtime. Set it only through a real review, never as a default, and always alongside reviewedBy and reviewedOn."
+        },
+        "products": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" },
+          "description": "Product or capability names as a customer would recognise them."
+        },
+        "useCases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "personas": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["cx-leader", "contact-center-ops", "it-architect", "developer", "procurement", "agent-supervisor"]
+          }
+        },
+        "depth": {
+          "type": "string",
+          "enum": ["overview", "functional", "technical"],
+          "description": "Lets the agent match depth to the visitor rather than always opening with the overview."
+        },
+        "industries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Omit when the asset is industry-neutral. Present means it is a strong match for those industries, not that it is restricted to them."
+        },
+        "durationSeconds": { "type": "number" },
+        "source": {
+          "type": "object",
+          "required": ["provider", "url"],
+          "additionalProperties": false,
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "Where the asset physically lives, for example sharepoint, vidyard, youtube, local."
+            },
+            "url": { "type": "string" },
+            "thumbnailUrl": { "type": "string" },
+            "requiresSignedUrl": {
+              "type": "boolean",
+              "description": "If true the backend mints a short-lived URL at show time. Never put a long-lived private URL in a stage directive."
+            }
+          }
+        },
+        "chapters": {
+          "type": "array",
+          "description": "For video. talkTrack is what the agent says in the chat rail while the chapter plays, and is what makes this guided rather than passive.",
+          "items": {
+            "type": "object",
+            "required": ["t", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "t": { "type": "number" },
+              "label": { "type": "string" },
+              "talkTrack": { "type": "string" }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "description": "For walkthrough assets.",
+          "items": {
+            "type": "object",
+            "required": ["imageUrl", "caption"],
+            "additionalProperties": true
+          }
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Asset ids that should ideally be seen first."
+        },
+        "followUps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Curated next assets. This is the journey graph, and it beats a semantic guess for 'what should I look at next'."
+        },
+        "talkingPoints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Approved claims the agent may make about this asset. Anything not here should not be asserted."
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Synonyms and competitor or legacy terms a visitor might use, to improve recall."
+        },
+        "reviewedOn": { "type": "string", "format": "date" },
+        "reviewedBy": { "type": "string" }
+      }
+    },
+    "tour": {
+      "type": "object",
+      "required": ["id", "title", "goal", "approved", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "type": "string" },
+        "goal": {
+          "type": "string",
+          "description": "What the visitor should understand by the end. The agent uses this to stay on track and to close the tour properly."
+        },
+        "approved": { "type": "boolean", "description": "Cleared for external use. A tour is only as approved as its least-approved step, so validate the steps too." },
+        "personas": { "type": "array", "items": { "type": "string" } },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["assetId", "narration"],
+            "additionalProperties": false,
+            "properties": {
+              "assetId": { "type": "string" },
+              "narration": {
+                "type": "string",
+                "description": "What the agent says when entering this step."
+              },
+              "checkIn": {
+                "type": "string",
+                "description": "Optional question asked after the step, to keep the visitor engaged and to gather profile signal."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

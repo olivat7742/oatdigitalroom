@@ -1,0 +1,217 @@
+{
+  "version": "0.3.0",
+  "updated": "2026-08-28",
+  "notes": "Chapters, talk tracks, summaries and talking points below were derived by stepping through each video frame by frame in the browser and reading what is actually on screen. Titles and product names were corrected from the filenames to what the videos themselves show. STILL approved:false on all three: watching a video is not the same as clearing it for external use, and approval needs a named human reviewer. Flip approved to true and fill reviewedBy/reviewedOn once signed off. IMPORTANT: on-screen figures in these videos are demo-environment data, not product benchmarks. The talk tracks are written to avoid presenting them as performance claims.",
+  "assets": [
+    {
+      "id": "nice-copilot-for-agents",
+      "title": "CXone Agent Copilot",
+      "summary": "A human agent handles a life insurance application on a live voice call while Agent Copilot works alongside them in the App Space: summarising the customer's journey, flagging missing health questions, confirming identity checks, creating the application in Salesforce, requesting the physician statement, and drafting the reply for the agent to review.",
+      "type": "video",
+      "approved": false,
+      "products": ["CXone Agent Copilot", "CXone Agent Workspace"],
+      "useCases": ["agent assist", "agent productivity", "application handling", "CRM automation", "insurance new business"],
+      "personas": ["cx-leader", "agent-supervisor", "contact-center-ops"],
+      "depth": "functional",
+      "industries": ["insurance", "financial services"],
+      "durationSeconds": 96,
+      "source": {
+        "provider": "local",
+        "url": "/media/NiCE%20Copilot%20for%20Agents-%20Every%20Agent%2C%20Elevated.mp4",
+        "requiresSignedUrl": false
+      },
+      "chapters": [
+        {
+          "t": 0,
+          "label": "Agents on high-value work",
+          "talkTrack": "Quick framing before the product appears. The premise is that the human agent keeps the conversation and the judgement calls, and Copilot takes the administrative work around them."
+        },
+        {
+          "t": 15,
+          "label": "The agent's screen",
+          "talkTrack": "Here is the real workspace. Inbox on the left, a life insurance application in the middle, and Copilot in the App Space on the right. Watch the right-hand panel, that is where everything happens."
+        },
+        {
+          "t": 25,
+          "label": "Copilot acts without being asked",
+          "talkTrack": "Two things just landed on their own. Identity was verified against knowledge base authentication and external checks, and the application was created in Salesforce with an e-signature link already sent to the customer."
+        },
+        {
+          "t": 50,
+          "label": "Next steps and a drafted reply",
+          "talkTrack": "Now it has requested the physician statement, notified the underwriter, and drafted the response for the agent. Notice the agent is reviewing and sending, not composing from scratch."
+        },
+        {
+          "t": 72,
+          "label": "What got automated",
+          "talkTrack": "This is the summary of the work that happened in the background: creating the application, collecting the signature, chasing the medical record."
+        },
+        {
+          "t": 86,
+          "label": "Close",
+          "talkTrack": "The question worth sitting with is how much of that your agents currently do by hand, and what that costs you in handle time."
+        }
+      ],
+      "talkingPoints": [
+        "Copilot works alongside the human agent in the App Space, it does not replace them",
+        "Demonstrates a live voice call on a life insurance new-business application",
+        "Shows identity verification, CRM record creation in Salesforce, and an e-signature request triggered without the agent doing it manually",
+        "Shows a drafted customer response that the agent reviews rather than writes",
+        "On-screen data is a demo environment, not a customer benchmark"
+      ],
+      "followUps": ["supervisor-control-clarity-coaching"],
+      "keywords": ["copilot", "agent assist", "agent productivity", "summarisation", "next best action", "salesforce", "docusign", "e-signature", "underwriting", "insurance", "app space", "agent workspace"]
+    },
+    {
+      "id": "outbound-engagement-compliance",
+      "title": "Proactive Outreach and outbound compliance",
+      "summary": "How compliance is enforced across an outbound programme, shown in the SmartReach admin: per-state calling windows, do-not-dial and do-not-leave-message settings, contact frequency rules such as one call per seven days in New York with lockout periods, and campaign segmentation. Then the outbound voice AI agent itself being built and test-called in Cognigy.",
+      "type": "video",
+      "approved": false,
+      "products": ["NiCE Proactive Outreach", "SmartReach", "Cognigy AI Agents"],
+      "useCases": ["outbound campaigns", "proactive engagement", "compliance", "contact strategy", "outbound voice AI"],
+      "personas": ["cx-leader", "contact-center-ops", "it-architect", "procurement"],
+      "depth": "technical",
+      "industries": ["financial services", "collections", "insurance", "utilities"],
+      "durationSeconds": 179,
+      "source": {
+        "provider": "local",
+        "url": "/media/Outbound%20Engagement-%20Confident%20Outreach%20Starts%20with%20Compliance.mp4",
+        "requiresSignedUrl": false
+      },
+      "chapters": [
+        {
+          "t": 0,
+          "label": "The question that decides it",
+          "talkTrack": "It opens on the question that usually determines whether an outbound programme scales or stalls: how is compliance actually enforced, rather than merely intended."
+        },
+        {
+          "t": 14,
+          "label": "Calling windows and do-not-contact",
+          "talkTrack": "This is the SmartReach admin. Per state and area code: the permitted calling window, whether the number may be dialled at all, and whether you are allowed to leave a message. All configuration, no code."
+        },
+        {
+          "t": 35,
+          "label": "Contact rules and frequency caps",
+          "talkTrack": "Here is a specific rule: one call per seven days in New York, scoped by channel, with a lockout period afterwards. This screen is usually what an auditor actually wants to see."
+        },
+        {
+          "t": 55,
+          "label": "Positioning",
+          "talkTrack": "A positioning slide rather than product. Say the word and I will skip ahead to the build."
+        },
+        {
+          "t": 75,
+          "label": "Segmentation and campaigns",
+          "talkTrack": "Segmentation decides who gets contacted, on which channel, under which campaign. This is where contact strategy stops being a spreadsheet."
+        },
+        {
+          "t": 115,
+          "label": "Building the AI agent that makes the calls",
+          "talkTrack": "This is the part most people do not expect in an outbound video. That is Cognigy, and this is the outbound voice AI agent being built and then live test-called: its instructions, its memory handling, its grounding knowledge and its tool calls are all visible."
+        },
+        {
+          "t": 155,
+          "label": "Scaling",
+          "talkTrack": "It closes on the scale argument, which is the point of putting compliance in configuration rather than in each campaign."
+        }
+      ],
+      "talkingPoints": [
+        "Compliance controls are configuration in the SmartReach admin, not per-campaign custom work",
+        "Shows per-state calling windows, do-not-dial and do-not-leave-message controls",
+        "Shows contact frequency rules with channel scope and lockout periods, at a granularity auditors ask about",
+        "Shows campaign segmentation driving channel selection",
+        "Shows a Cognigy AI agent authored and live test-called as the outbound voice agent, including grounding and tool calls",
+        "On-screen data is a demo environment, not a customer benchmark"
+      ],
+      "prerequisites": [],
+      "followUps": ["supervisor-control-clarity-coaching"],
+      "keywords": ["outbound", "dialer", "dialler", "campaign", "compliance", "TCPA", "consent", "do not call", "DNC", "calling window", "contact strategy", "segmentation", "proactive outreach", "smartreach", "voicemail detection", "cognigy", "outbound voice bot"]
+    },
+    {
+      "id": "supervisor-control-clarity-coaching",
+      "title": "Supervisor Workspace, managing human and AI agents",
+      "summary": "The supervisor experience for a mixed workforce of human and AI agents. An AI Agents view lists each bot like a team member with containment, quality score, sentiment and escalation rate, and flags the conversations needing attention with the reason. Then live monitoring of a single conversation with transcript and generated summary, queue and SLA views, and reskill recommendations naming specific agents to activate when an SLA is at risk.",
+      "type": "video",
+      "approved": false,
+      "products": ["CXone Supervisor Workspace"],
+      "useCases": ["supervisor experience", "AI agent supervision", "coaching", "real-time monitoring", "SLA management", "workforce reskilling"],
+      "personas": ["agent-supervisor", "contact-center-ops", "cx-leader"],
+      "depth": "functional",
+      "durationSeconds": 135,
+      "source": {
+        "provider": "local",
+        "url": "/media/Supervisor-%20Control%2C%20Clarity%2C%20and%20Coaching%E2%80%94All%20in%20One.mp4",
+        "requiresSignedUrl": false
+      },
+      "chapters": [
+        {
+          "t": 0,
+          "label": "A mixed team",
+          "talkTrack": "The setup is the real change: supervisors now manage human agents and AI agents in the same team. That is what breaks most existing supervisor tooling."
+        },
+        {
+          "t": 28,
+          "label": "Supervising AI agents",
+          "talkTrack": "This tab is the one that does not exist in most platforms. AI agents listed like staff, each with containment, quality score, sentiment and escalation rate. You can manage a bot the way you manage a person."
+        },
+        {
+          "t": 48,
+          "label": "Finding the AI agents that are failing",
+          "talkTrack": "Look at the rows flagged critical, and at the reason column: customer frustration detected, repeated clarification requests, a loop detected in conversation. That is how you catch a badly behaving AI agent before your customers report it."
+        },
+        {
+          "t": 62,
+          "label": "Live monitoring one conversation",
+          "talkTrack": "Drilling into a single contact: the path the conversation took, the full transcript, and a generated live summary so the supervisor does not have to read it all. They can drop a comment straight in."
+        },
+        {
+          "t": 80,
+          "label": "Queues, SLA and alerts",
+          "talkTrack": "Back to familiar territory. Skills, SLA, wait times, with proactive alerts on the right rather than a dashboard you have to keep staring at."
+        },
+        {
+          "t": 96,
+          "label": "Reskill recommendations",
+          "talkTrack": "This is the most useful screen in the video. An SLA is at risk, and rather than just alerting, it has named three specific agents who could cover that skill, with a reason for each. The supervisor applies it in one click."
+        }
+      ],
+      "talkingPoints": [
+        "Supervisors manage human and AI agents from one workspace",
+        "AI agents are measured individually on containment, quality, sentiment and escalation rate",
+        "Conversations needing attention are surfaced with a detected reason, such as a conversation loop or repeated clarification",
+        "Live monitoring includes the conversation path, transcript and a generated summary, with supervisor commenting",
+        "Reskill recommendations name specific agents and give a rationale, and can be applied directly",
+        "On-screen figures are a demo environment, not a customer benchmark"
+      ],
+      "followUps": ["nice-copilot-for-agents"],
+      "keywords": ["supervisor", "supervisor workspace", "coaching", "monitoring", "live monitoring", "SLA", "reskill", "AI agent management", "bot performance", "containment rate", "quality score", "sentiment", "escalation", "team performance"]
+    }
+  ],
+  "tours": [
+    {
+      "id": "three-pillars",
+      "title": "Agents, supervisors, and outbound",
+      "goal": "The visitor understands that NiCE treats AI agents as part of the workforce: assisted by Copilot on the agent side, measured and coached like staff on the supervisor side, and governed by compliance configuration on the outbound side.",
+      "approved": false,
+      "personas": ["cx-leader", "contact-center-ops", "agent-supervisor"],
+      "steps": [
+        {
+          "assetId": "nice-copilot-for-agents",
+          "narration": "Let me start where most people feel the pain first: the agent's screen, and how much admin sits around a single conversation.",
+          "checkIn": "How much of that after-call and mid-call admin do your agents do by hand today?"
+        },
+        {
+          "assetId": "supervisor-control-clarity-coaching",
+          "narration": "Now the layer above it. Once AI agents are handling real conversations, someone has to supervise them, and that is where most platforms have nothing to offer.",
+          "checkIn": "Do you have any way today to tell whether a bot is performing badly, other than customers complaining?"
+        },
+        {
+          "assetId": "outbound-engagement-compliance",
+          "narration": "Last one, and this is the one your risk and compliance people will care about most. It also shows the AI agent itself being built, so it doubles as the technical view.",
+          "checkIn": "Would it help to go deeper on the compliance configuration with one of our specialists?"
+        }
+      ]
+    }
+  ]
+}

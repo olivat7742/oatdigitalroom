@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nice.internal/digital-room/stage-directive.schema.json",
+  "title": "Digital Room stage directive",
+  "description": "Attached by the Cognigy agent to a message as data._showroom. Instructs the frontend stage what to render. The frontend is a thin renderer: it must not infer anything not present here.",
+  "type": "object",
+  "required": ["_showroom"],
+  "properties": {
+    "_showroom": {
+      "type": "object",
+      "required": ["v", "action"],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "const": 1,
+          "description": "Contract version. Bump only on a breaking change; the frontend must ignore directives with an unknown version rather than guessing."
+        },
+        "action": {
+          "type": "string",
+          "enum": ["show", "play", "pause", "seek", "highlight", "step", "clear"],
+          "description": "show = render asset without autoplay. play = render and start. seek = jump within the current asset. highlight = draw attention to a region of the current asset. step = advance a walkthrough or tour. clear = empty the stage."
+        },
+        "asset": {
+          "type": "object",
+          "description": "Required for show and play. Omitted for control actions on the already-loaded asset.",
+          "required": ["id", "type"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string", "description": "Catalog asset id." },
+            "type": {
+              "type": "string",
+              "enum": ["video", "walkthrough", "diagram", "comparison", "document"]
+            },
+            "title": { "type": "string" },
+            "src": { "type": "string", "description": "Resolved playable or renderable URL. Resolved by the backend, never assembled by the agent." },
+            "posterUrl": { "type": "string" },
+            "durationSeconds": { "type": "number" },
+            "chapters": {
+              "type": "array",
+              "description": "Video chapters. talkTrack is spoken by the agent in the chat rail as the chapter plays.",
+              "items": {
+                "type": "object",
+                "required": ["t", "label"],
+                "additionalProperties": false,
+                "properties": {
+                  "t": { "type": "number", "description": "Start time in seconds." },
+                  "label": { "type": "string" },
+                  "talkTrack": { "type": "string" }
+                }
+              }
+            },
+            "steps": {
+              "type": "array",
+              "description": "Walkthrough steps for type=walkthrough. Each step is a screenshot plus an optional hotspot.",
+              "items": {
+                "type": "object",
+                "required": ["imageUrl", "caption"],
+                "additionalProperties": false,
+                "properties": {
+                  "imageUrl": { "type": "string" },
+                  "caption": { "type": "string" },
+                  "hotspot": {
+                    "type": "object",
+                    "description": "Region to highlight, as fractions of image width and height (0 to 1).",
+                    "required": ["x", "y", "w", "h"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "x": { "type": "number" },
+                      "y": { "type": "number" },
+                      "w": { "type": "number" },
+                      "h": { "type": "number" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "position": {
+          "type": "number",
+          "description": "Target time in seconds for action=seek, or zero-based index for action=step."
+        },
+        "tour": {
+          "type": "object",
+          "description": "Present when the visitor is inside a guided tour, so the stage can render progress.",
+          "required": ["id", "step", "totalSteps"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "step": { "type": "number", "description": "One-based current step." },
+            "totalSteps": { "type": "number" }
+          }
+        },
+        "cta": {
+          "type": "array",
+          "description": "Suggested next actions rendered as buttons. Selecting one sends its value back to the agent as user input.",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "required": ["label", "value", "kind"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string", "description": "Text sent back to the agent when selected." },
+              "kind": {
+                "type": "string",
+                "enum": ["quick_reply", "next_asset", "tour_next", "tour_back", "handoff"]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

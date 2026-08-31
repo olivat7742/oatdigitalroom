@@ -1,0 +1,179 @@
+{
+  "version": "0.1.0-seed",
+  "updated": "2026-08-28",
+  "notes": "PLACEHOLDER CONTENT. These entries exist to validate the schema and to show the shape of a good record, in particular chapters[].talkTrack and followUps. Product names, claims, URLs and durations are invented and MUST be replaced with real reviewed assets before any use. Every entry is deliberately approved:false so that nothing here can be retrieved at runtime even by accident. Do not ship this file.",
+  "assets": [
+    {
+      "id": "self-service-voice-containment",
+      "title": "Containing a routine voice call without an agent",
+      "summary": "A customer calls to reschedule a delivery. The AI agent understands the request in natural language, checks the order, offers new slots, and confirms, with no human involved and no menu tree.",
+      "type": "video",
+      "approved": false,
+      "products": ["Cognigy AI Agents", "CXone Voice"],
+      "useCases": ["self-service automation", "voice AI", "call containment"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "durationSeconds": 210,
+      "source": {
+        "provider": "REPLACE_ME",
+        "url": "REPLACE_ME",
+        "thumbnailUrl": "REPLACE_ME"
+      },
+      "chapters": [
+        {
+          "t": 0,
+          "label": "The call arrives",
+          "talkTrack": "Watch what does not happen here. No menu, no press one for deliveries. The caller just says what they want."
+        },
+        {
+          "t": 45,
+          "label": "Understanding intent",
+          "talkTrack": "The agent has resolved two things at once: the intent, and the specific order. That order lookup is a tool call into the backend, not scripted."
+        },
+        {
+          "t": 120,
+          "label": "Offering options",
+          "talkTrack": "Slot availability is live. This is the part that usually forces a transfer to a human, and it is the part that most determines whether containment holds."
+        },
+        {
+          "t": 175,
+          "label": "Confirmation",
+          "talkTrack": "Confirmed and logged. If any step had failed, the escalation path would have carried the full context to a human rather than starting over."
+        }
+      ],
+      "followUps": ["escalation-with-context", "ai-agent-build-walkthrough"],
+      "talkingPoints": [
+        "Natural language, no menu navigation required",
+        "Live backend lookup via tool calls rather than scripted responses",
+        "Failure path preserves context for the human agent"
+      ],
+      "keywords": ["IVR replacement", "voicebot", "deflection", "containment rate", "self service"],
+      "reviewedOn": "2026-08-28",
+      "reviewedBy": "PLACEHOLDER"
+    },
+    {
+      "id": "escalation-with-context",
+      "title": "AI to human escalation without losing context",
+      "summary": "When the AI agent cannot complete a request, the conversation moves to a human agent who arrives with the full transcript, the resolved customer record, and a summary of what was already tried.",
+      "type": "video",
+      "approved": false,
+      "products": ["Cognigy AI Agents", "CXone Digital", "CXone Agent"],
+      "useCases": ["escalation", "agent assist", "omnichannel routing"],
+      "personas": ["cx-leader", "agent-supervisor", "contact-center-ops"],
+      "depth": "functional",
+      "durationSeconds": 165,
+      "source": { "provider": "REPLACE_ME", "url": "REPLACE_ME" },
+      "chapters": [
+        {
+          "t": 0,
+          "label": "Recognising the limit",
+          "talkTrack": "The agent does not loop or apologise repeatedly. It recognises it is out of scope and escalates, which is a design choice you control."
+        },
+        {
+          "t": 60,
+          "label": "Routing to the right skill",
+          "talkTrack": "Routing uses the intent that was already established, so the customer does not repeat themselves to a human."
+        },
+        {
+          "t": 110,
+          "label": "What the human sees",
+          "talkTrack": "This is the screen that matters. Transcript, customer record, and a generated summary. Handle time savings live here."
+        }
+      ],
+      "prerequisites": ["self-service-voice-containment"],
+      "followUps": ["digital-room-architecture"],
+      "talkingPoints": [
+        "Escalation criteria are configurable, not model-dependent",
+        "Context carries across the handoff",
+        "Human agent receives a generated summary"
+      ],
+      "keywords": ["handoff", "transfer", "warm transfer", "context preservation"],
+      "reviewedOn": "2026-08-28",
+      "reviewedBy": "PLACEHOLDER"
+    },
+    {
+      "id": "ai-agent-build-walkthrough",
+      "title": "Building the AI agent, step by step",
+      "summary": "A clickable walkthrough of how the AI agent above was actually configured: the agent definition, its tools, the knowledge source, and the escalation rule.",
+      "type": "walkthrough",
+      "approved": false,
+      "products": ["Cognigy AI Agents"],
+      "useCases": ["build experience", "agentic design", "tooling"],
+      "personas": ["it-architect", "developer"],
+      "depth": "technical",
+      "source": { "provider": "local", "url": "/walkthroughs/ai-agent-build" },
+      "steps": [
+        {
+          "imageUrl": "REPLACE_ME",
+          "caption": "The agent definition. Persona and rails, no dialogue tree.",
+          "hotspot": { "x": 0.1, "y": 0.2, "w": 0.35, "h": 0.15 }
+        },
+        {
+          "imageUrl": "REPLACE_ME",
+          "caption": "The tools available to the agent. The model chooses which to call.",
+          "hotspot": { "x": 0.55, "y": 0.3, "w": 0.3, "h": 0.25 }
+        },
+        {
+          "imageUrl": "REPLACE_ME",
+          "caption": "The escalation rule. Deterministic, not left to the model."
+        }
+      ],
+      "prerequisites": ["self-service-voice-containment"],
+      "followUps": ["digital-room-architecture"],
+      "talkingPoints": [
+        "Agentic design replaces large dialogue trees",
+        "Tool definitions are the main build artefact",
+        "Escalation stays deterministic"
+      ],
+      "keywords": ["how to build", "configuration", "developer", "tools", "flow"],
+      "reviewedOn": "2026-08-28",
+      "reviewedBy": "PLACEHOLDER"
+    },
+    {
+      "id": "digital-room-architecture",
+      "title": "How the pieces fit together",
+      "summary": "An architecture view of the platform layer: channels, the AI agent, knowledge, routing, and the analytics loop that feeds improvements back in.",
+      "type": "diagram",
+      "approved": false,
+      "products": ["CXone", "Cognigy AI Agents", "Interaction Analytics"],
+      "useCases": ["platform architecture", "integration"],
+      "personas": ["it-architect", "developer", "cx-leader"],
+      "depth": "technical",
+      "source": { "provider": "local", "url": "/diagrams/platform-overview.svg" },
+      "followUps": ["escalation-with-context"],
+      "talkingPoints": [
+        "Single platform across channels",
+        "Analytics feeds agent improvement rather than sitting in a separate report"
+      ],
+      "keywords": ["architecture", "diagram", "integration", "API", "how it works"],
+      "reviewedOn": "2026-08-28",
+      "reviewedBy": "PLACEHOLDER"
+    }
+  ],
+  "tours": [
+    {
+      "id": "automate-without-frustrating",
+      "title": "Automate more without frustrating customers",
+      "goal": "The visitor understands that containment and customer experience are not in tension, because the escalation path is designed rather than accidental.",
+      "approved": false,
+      "personas": ["cx-leader", "contact-center-ops"],
+      "steps": [
+        {
+          "assetId": "self-service-voice-containment",
+          "narration": "Let me start with the case everyone worries about: a routine call that a bot would normally mangle.",
+          "checkIn": "Is that closer to your current self-service experience, or quite far from it?"
+        },
+        {
+          "assetId": "escalation-with-context",
+          "narration": "Now the more important half. Containment only works if the failure path is good, so here is what happens when the AI agent hits its limit.",
+          "checkIn": "How much of your handle time today goes on customers repeating themselves?"
+        },
+        {
+          "assetId": "digital-room-architecture",
+          "narration": "Last one, and this is for whoever on your side will ask how it actually plugs in.",
+          "checkIn": "Would it help to go deeper on the integration side with one of our architects?"
+        }
+      ]
+    }
+  ]
+}
