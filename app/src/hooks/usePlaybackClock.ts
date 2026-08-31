@@ -31,22 +31,40 @@ export function usePlaybackClock({
   const [currentTime, setCurrentTime] = useState(0)
   const endedRef = useRef(false)
 
-  // Apply seeks from the agent.
-  useEffect(() => {
-    if (!seek) return
-    const clamped = Math.min(Math.max(0, seek.position), durationSeconds)
-    endedRef.current = false
-    setCurrentTime(clamped)
-    if (hasSource && mediaRef.current) {
-      mediaRef.current.currentTime = clamped
-    }
-  }, [seek, durationSeconds, hasSource, mediaRef])
-
   // Reset when the asset changes length underneath us.
+  //
+  // Declared BEFORE the seek effect on purpose. Both run on mount, in declaration order, and
+  // if this one ran second it would clobber an opening seek back to zero. That is exactly the
+  // case where the agent starts a video at a chapter offset.
   useEffect(() => {
     endedRef.current = false
     setCurrentTime(0)
   }, [durationSeconds])
+
+  // Apply seeks, whether from the agent or from the visitor scrubbing.
+  useEffect(() => {
+    if (!seek) return
+    const clamped = Math.min(Math.max(0, seek.position), durationSeconds || Number.POSITIVE_INFINITY)
+    endedRef.current = false
+    setCurrentTime(clamped)
+
+    if (!hasSource) return
+    const element = mediaRef.current
+    if (!element) return
+
+    // Setting currentTime before metadata has loaded is silently discarded, which is the
+    // normal case when a directive opens an asset at an offset: the element was created in
+    // the same render.
+    if (element.readyState >= 1) {
+      element.currentTime = clamped
+      return
+    }
+    const onLoadedMetadata = () => {
+      element.currentTime = clamped
+    }
+    element.addEventListener('loadedmetadata', onLoadedMetadata, { once: true })
+    return () => element.removeEventListener('loadedmetadata', onLoadedMetadata)
+  }, [seek, durationSeconds, hasSource, mediaRef])
 
   // Real media: mirror the element.
   useEffect(() => {

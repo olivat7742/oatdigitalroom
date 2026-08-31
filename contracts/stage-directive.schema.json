@@ -78,7 +78,7 @@
         },
         "position": {
           "type": "number",
-          "description": "Target time in seconds for action=seek, or zero-based index for action=step."
+          "description": "Target time in seconds for action=seek. Zero-based index for action=step. On show and play it is an optional START OFFSET, which lets the agent open a video at a chapter in a single directive rather than a play-then-seek pair."
         },
         "tour": {
           "type": "object",

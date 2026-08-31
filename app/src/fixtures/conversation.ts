@@ -83,9 +83,11 @@ export const GREETING: ScriptedStep[] = [
           action: 'clear',
           cta: [
             { label: 'Helping agents', value: 'How do you help agents during a conversation?', kind: 'quick_reply' },
-            { label: 'Supervisors', value: 'What does the supervisor experience look like?', kind: 'quick_reply' },
-            { label: 'Outbound', value: 'How does outbound engagement work?', kind: 'quick_reply' },
-            { label: 'Show me everything', value: 'Give me the guided tour', kind: 'quick_reply' },
+            { label: 'Supervising AI agents', value: 'What does the supervisor experience look like?', kind: 'quick_reply' },
+            { label: 'Outbound compliance', value: 'How does outbound engagement work?', kind: 'quick_reply' },
+            // Surfaces the jump-to-a-moment capability immediately, since it is the least
+            // discoverable and the most persuasive thing the guide does.
+            { label: 'Jump to a specific moment', value: 'Skip to the part where the AI agent is built in Cognigy', kind: 'quick_reply' },
           ],
         },
       },
@@ -94,6 +96,187 @@ export const GREETING: ScriptedStep[] = [
 ]
 
 export const SCRIPT: ScriptedTurn[] = [
+  // Chapter jumps come FIRST, so a question about a specific moment is not swallowed by the
+  // broader topic matchers below. Positions are the real chapter timestamps from the catalog.
+  {
+    id: 'chapter-reskill',
+    match: /reskill|re-?skill|sla.*(risk|breach)|recommend.*(agent|skill)|cover.*skill/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to about 1:36, where the reskill recommendations appear. Watch that it names specific agents and gives a reason for each, rather than just raising an alert.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: SUPERVISOR,
+              position: 96,
+              cta: [
+                { label: 'Start from the beginning', value: 'What does the supervisor experience look like?', kind: 'quick_reply' },
+                { label: 'Which bots are failing?', value: 'How do I find AI agents that are failing?', kind: 'quick_reply' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-failing-bots',
+    match: /failing|fails|loop|underperform|badly|which bot|bad bot|frustrat/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Straight to 0:48. These are the conversations flagged critical, with the detected reason next to each, including a loop detected in conversation.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: SUPERVISOR,
+              position: 48,
+              cta: [
+                { label: 'Then what?', value: 'Jump to the reskill recommendations', kind: 'tour_next' },
+                { label: 'Watch one conversation', value: 'Show me live monitoring of a conversation', kind: 'quick_reply' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-live-monitoring',
+    match: /live monitor|monitor.*conversation|transcript|listen in|watch a (call|conversation)/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to 1:02. Conversation path on the left, full transcript in the middle, and a generated summary so the supervisor does not have to read it all.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: SUPERVISOR,
+              position: 62,
+              cta: [
+                { label: 'Reskilling next', value: 'Jump to the reskill recommendations', kind: 'tour_next' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-cognigy-build',
+    match: /cognigy|voice ai agent|outbound.*(built|build|author)|(built|build).*outbound|grounding|tool call/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Skipping to 1:55, the part people do not expect in an outbound video. That is the voice AI agent being authored and live test-called, with its instructions, grounding and tool calls visible.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: OUTBOUND,
+              position: 115,
+              cta: [
+                { label: 'Back to compliance', value: 'Show me the calling window rules', kind: 'quick_reply' },
+                { label: 'Talk to an engineer', value: 'Can I talk to someone technical?', kind: 'handoff' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-calling-rules',
+    match: /calling window|do not (dial|call)|\bdnc\b|per.?state|state.*(rule|law)|frequency|lockout|how often|one call/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to 0:35. A real rule: one call per seven days in New York, scoped by channel, with a lockout period. This is usually the screen an auditor actually wants.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: OUTBOUND,
+              position: 35,
+              cta: [
+                { label: 'How was the agent built?', value: 'Show me the AI agent being built in Cognigy', kind: 'next_asset' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-salesforce',
+    match: /salesforce|crm record|e-?sign|docusign|application created|identity|verif/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to 0:25. Two things land without the agent asking: identity verified, and the application created in Salesforce with an e-signature link already sent.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: COPILOT,
+              position: 25,
+              cta: [
+                { label: 'What happens next?', value: 'Show me the drafted reply part', kind: 'tour_next' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-drafted-reply',
+    match: /draft|suggested response|physician|underwrit|write.*(reply|response)/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to 0:50. The physician statement has been requested and the reply is drafted. The agent reviews and sends rather than composing from scratch.',
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'play',
+              asset: COPILOT,
+              position: 50,
+              cta: [
+                { label: 'See it all automated', value: 'Show me the end to end automation summary', kind: 'quick_reply' },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: 'chapter-end-to-end',
+    match: /end.?to.?end|automation summary|what got automated/i,
+    steps: [
+      {
+        delayMs: 650,
+        message: {
+          text: 'Jumping to 1:12, the recap of what happened in the background: creating the application, collecting the signature, chasing the medical record.',
+          data: {
+            _showroom: { v: 1, action: 'play', asset: COPILOT, position: 72 },
+          },
+        },
+      },
+    ],
+  },
   {
     id: 'copilot',
     match: /copilot|agent assist|help.*agent|agent.*help|productiv|summar|during a (call|conversation)/i,

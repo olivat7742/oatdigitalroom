@@ -75,7 +75,12 @@ export function applyDirective(stage: StageState, directive: StageDirective): St
         playing: directive.action === 'play',
         stepIndex: 0,
         highlighted: false,
-        seek: null,
+        // A position on show/play is a start offset, so the agent can open a video at a
+        // chapter in one directive instead of a play-then-seek pair.
+        seek:
+          typeof directive.position === 'number'
+            ? { position: directive.position, nonce: (stage.seek?.nonce ?? 0) + 1 }
+            : null,
       }
 
     case 'pause':
@@ -99,6 +104,32 @@ export function applyDirective(stage: StageState, directive: StageDirective): St
   }
 }
 
+/**
+ * Chapters the visitor is being skipped past, pre-marked as already narrated.
+ *
+ * Without this, opening an asset at an offset fires the wrong talk track. The clock starts at
+ * zero for a frame before the seek lands, so chapter one narrates, and then the target chapter
+ * narrates too. The visitor sees two unrelated narration blocks and the jump reads as
+ * confused. Everything strictly before the landing chapter is suppressed; the landing chapter
+ * itself still speaks.
+ */
+function skippedChapterKeys(directive: StageDirective): Set<string> {
+  const skipped = new Set<string>()
+  const asset = directive.asset
+  const position = directive.position
+
+  if (!asset?.chapters?.length || typeof position !== 'number') return skipped
+
+  let landingIndex = 0
+  asset.chapters.forEach((chapter, index) => {
+    if (chapter.t <= position) landingIndex = index
+  })
+  for (let index = 0; index < landingIndex; index += 1) {
+    skipped.add(`${asset.id}:${index}`)
+  }
+  return skipped
+}
+
 export const useSessionStore = create<SessionState>((set, get) => {
   let transport: Transport | null = null
 
@@ -118,7 +149,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
         // A new asset resets narration tracking, and cta/tour are replaced rather than
         // merged so a stale button from a previous turn can never linger.
         if (directive.action === 'show' || directive.action === 'play' || directive.action === 'clear') {
-          next.narratedChapters = new Set<string>()
+          next.narratedChapters = skippedChapterKeys(directive)
         }
         if (directive.cta !== undefined || directive.action === 'clear') {
           next.cta = directive.cta ?? []
