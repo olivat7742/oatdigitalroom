@@ -1,5 +1,49 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
 import { FALLBACK, GREETING, SCRIPT, type ScriptedStep } from '@/fixtures/conversation'
+import { formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
+
+/**
+ * Builds a turn from a catalog search, or null when nothing matches.
+ *
+ * This is the closest mock mode gets to the real agent: it finds the best asset and plays it
+ * with an honest one-line introduction. It deliberately makes no claims about the content
+ * beyond the catalog summary, since almost none of these assets have approved talking points.
+ */
+function catalogSearchTurn(query: string): ScriptedStep[] | null {
+  const matches = searchCatalog(query, 3)
+  const best = matches[0]
+  if (!best) return null
+
+  const asset = toStageAsset(best.id)
+  if (!asset) return null
+
+  const runtime = formatRuntime(best.durationSeconds)
+  const alternatives = matches.slice(1, 3)
+
+  return [
+    {
+      delayMs: 650,
+      message: {
+        text: `${best.title}, ${runtime}.\n\n${best.summary}`,
+        data: {
+          _showroom: {
+            v: 1,
+            action: 'play',
+            asset,
+            cta: [
+              ...alternatives.map((alt) => ({
+                label: alt.title.length > 34 ? `${alt.title.slice(0, 32)}...` : alt.title,
+                value: alt.title,
+                kind: 'next_asset' as const,
+              })),
+              { label: 'Something else', value: 'What else can you show me?', kind: 'quick_reply' as const },
+            ].slice(0, 3),
+          },
+        },
+      },
+    },
+  ]
+}
 
 /**
  * Fixture-driven transport. No network, no backend, no model.
@@ -48,7 +92,14 @@ export class MockTransport implements Transport {
 
   send(text: string): void {
     const turn = SCRIPT.find((candidate) => candidate.match.test(text))
-    this.replay(turn ? turn.steps : FALLBACK)
+    if (turn) {
+      this.replay(turn.steps)
+      return
+    }
+    // Scripted turns handle the chapter jumps and the guardrail cases, which need exact
+    // wording. Everything else falls through to a catalog search, so all thirty assets are
+    // reachable here rather than only the handful with hand-written turns.
+    this.replay(catalogSearchTurn(text) ?? FALLBACK)
   }
 
   /**

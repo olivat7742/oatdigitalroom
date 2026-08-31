@@ -44,7 +44,9 @@ export interface CatalogAsset {
   useCases: string[]
   personas: string[]
   depth: 'overview' | 'functional' | 'technical'
+  industries?: string[]
   durationSeconds?: number
+  sizeMB?: number
   source: CatalogSource
   chapters?: Chapter[]
   steps?: WalkthroughStep[]
@@ -106,6 +108,56 @@ export function toStageAsset(id: string): StageAsset | null {
   if (entry.steps?.length) asset.steps = entry.steps
 
   return asset
+}
+
+/**
+ * Keyword search over the catalog.
+ *
+ * Deliberately the same scoring shape as the Cognigy find_demo tool, so mock mode and the live
+ * agent rank the same way and a demo in one is representative of the other. Not a semantic
+ * search: with thirty assets and rich keyword lists, term overlap is enough, and it is
+ * debuggable in a way an embedding is not.
+ */
+export function searchCatalog(query: string, limit = 3): CatalogAsset[] {
+  const terms = query
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((term) => term.length > 2)
+
+  if (terms.length === 0) return []
+
+  const scored = catalog.assets.map((asset) => {
+    const haystack = [
+      asset.title,
+      asset.summary,
+      asset.products.join(' '),
+      asset.useCases.join(' '),
+      (asset.keywords ?? []).join(' '),
+      (asset.industries ?? []).join(' '),
+      (asset.chapters ?? []).map((chapter) => chapter.label).join(' '),
+    ]
+      .join(' ')
+      .toLowerCase()
+
+    let score = 0
+    for (const term of terms) if (haystack.includes(term)) score += 1
+    // Nudge assets that can actually be guided, since a chaptered asset gives a better answer.
+    if (score > 0 && asset.chapters?.length) score += 0.5
+    return { asset, score }
+  })
+
+  return scored
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((entry) => entry.asset)
+}
+
+export function formatRuntime(seconds: number | undefined): string {
+  if (!seconds) return 'unknown length'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 1) return 'under a minute'
+  return `${minutes} min`
 }
 
 /** Assets with no chapters yet. Surfaced in the UI so the gap is visible, not silent. */

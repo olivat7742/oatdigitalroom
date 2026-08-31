@@ -73,6 +73,10 @@
           "description": "Omit when the asset is industry-neutral. Present means it is a strong match for those industries, not that it is restricted to them."
         },
         "durationSeconds": { "type": "number" },
+        "sizeMB": {
+          "type": "number",
+          "description": "File size in megabytes, written by tools/build-catalog.mjs. Informational: it makes the web-delivery problem visible in the catalog itself."
+        },
         "source": {
           "type": "object",
           "required": ["provider", "url"],

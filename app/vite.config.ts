@@ -22,6 +22,9 @@ const MIME: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
   '.m4v': 'video/mp4',
+  // Several of the NiCE World sessions are .mov. Without this they were served as
+  // application/octet-stream and only played because the browser sniffed the container.
+  '.mov': 'video/quicktime',
   '.mp3': 'audio/mpeg',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
