@@ -1,0 +1,62 @@
+#!/bin/sh
+# Pre-commit guard for a PUBLIC repository.
+#
+# Why this exists: the Cognigy endpoint URL token is a generic 64-character hex string.
+# GitHub's secret scanner recognises vendor-shaped tokens (AWS keys, GitHub PATs, Stripe
+# keys) and will not recognise this one. So push protection cannot save us here, and the
+# control has to be local and run before the commit exists.
+#
+# Enabled via: git config core.hooksPath tools/git-hooks
+# Bypass a false positive with: git commit --no-verify
+
+fail=0
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+for f in $staged; do
+  case "$f" in
+    *.env.example)
+      : # the documented template, no values in it
+      ;;
+    *.env|*.env.*)
+      echo "BLOCKED  $f"
+      echo "         Env files may hold the Cognigy endpoint token. Keep them local."
+      fail=1
+      ;;
+    cognigy/deployed.md|cognigy/deployed.local.md)
+      echo "BLOCKED  $f"
+      echo "         Holds NiCE tenant, project and agent identifiers. Must stay local."
+      fail=1
+      ;;
+  esac
+done
+
+if [ -n "$staged" ]; then
+  diff=$(git diff --cached -U0)
+
+  if printf '%s' "$diff" | grep -qE 'endpoint-[a-z0-9-]+\.cognigy\.ai/[0-9a-f]{16,}'; then
+    echo "BLOCKED  staged content contains a Cognigy endpoint URL including its token."
+    fail=1
+  fi
+
+  # 40+ hex is long enough to be a credential and short enough to avoid matching npm
+  # integrity hashes, which are base64.
+  if printf '%s' "$diff" | grep -qE '[0-9a-f]{40,}'; then
+    echo "BLOCKED  staged content contains a 40+ character hex string, which looks like a token."
+    fail=1
+  fi
+
+  if printf '%s' "$diff" | grep -qiE '(api[_-]?key|client[_-]?secret|password)[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9._-]{12,}'; then
+    echo "BLOCKED  staged content looks like it assigns a real credential."
+    fail=1
+  fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "Commit aborted. This repository is PUBLIC."
+  echo "Once a secret is pushed it must be treated as burned and rotated, not just deleted."
+  echo "If this is genuinely a false positive: git commit --no-verify"
+  exit 1
+fi
+
+exit 0
