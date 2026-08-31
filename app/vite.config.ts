@@ -159,6 +159,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, appDir, '')
 
   return {
+    // GitHub Pages serves from /<repo>/, so asset URLs need that prefix. Set VITE_BASE in
+    // the Pages workflow. Defaults to '/' for local dev and any root-hosted deployment.
+    base: env['VITE_BASE'] || '/',
     plugins: [react(), mediaPlugin()],
     resolve: {
       alias: {

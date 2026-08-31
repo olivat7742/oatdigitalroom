@@ -8,6 +8,24 @@
 
 import raw from '@catalog/demo-catalog.json'
 import type { Chapter, StageAsset, StageAssetType, WalkthroughStep } from '@/types/stageDirective'
+import { placeholderImage } from '@/placeholder'
+
+/**
+ * False in a static build such as GitHub Pages, where the demo videos are deliberately
+ * absent: they are unapproved NiCE marketing masters and are not in the repository.
+ *
+ * When false, no asset gets a `src`, so the video renderer falls back to its synthetic clock
+ * and a generated placeholder poster. The chapter and talk-track mechanism stays fully
+ * demonstrable without ever requesting a file that is not there.
+ */
+const MEDIA_AVAILABLE = import.meta.env.VITE_MEDIA_AVAILABLE !== 'false'
+
+function formatDuration(seconds: number | undefined): string {
+  if (!seconds) return 'simulated playback'
+  const minutes = Math.floor(seconds / 60)
+  const remainder = seconds % 60
+  return `${minutes}:${String(remainder).padStart(2, '0')} · simulated playback`
+}
 
 export interface CatalogSource {
   provider: string
@@ -73,8 +91,16 @@ export function toStageAsset(id: string): StageAsset | null {
     title: entry.title,
   }
 
-  if (entry.source.url) asset.src = entry.source.url
-  if (entry.source.thumbnailUrl) asset.posterUrl = entry.source.thumbnailUrl
+  // Withhold src entirely when media is unavailable, rather than emitting a URL that
+  // 404s. hasRealSource() then reports false and the renderer degrades deliberately.
+  if (MEDIA_AVAILABLE && entry.source.url) asset.src = entry.source.url
+
+  if (entry.source.thumbnailUrl) {
+    asset.posterUrl = entry.source.thumbnailUrl
+  } else if (!MEDIA_AVAILABLE) {
+    asset.posterUrl = placeholderImage(entry.title, formatDuration(entry.durationSeconds))
+  }
+
   if (entry.durationSeconds !== undefined) asset.durationSeconds = entry.durationSeconds
   if (entry.chapters?.length) asset.chapters = entry.chapters
   if (entry.steps?.length) asset.steps = entry.steps

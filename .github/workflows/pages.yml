@@ -1,0 +1,78 @@
+name: Deploy Showroom to GitHub Pages
+
+# Publishes the Digital Room portal in MOCK MODE only.
+#
+# This build cannot reach Cognigy: VITE_TRANSPORT=mock selects the fixture transport, and no
+# endpoint URL or token is available to the workflow. That is deliberate. A public static
+# site has nowhere safe to keep a credential, so the published build has none and cannot
+# leak one. The live agent runs locally only, behind the dev proxy.
+#
+# VITE_MEDIA_AVAILABLE=false stops the build requesting the demo videos, which are
+# unapproved NiCE marketing masters and are not in this repository. The stage falls back to
+# a synthetic playback clock with generated MOCK ASSET placeholders, so the chapter and
+# talk-track experience is still fully demonstrable.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VITE_TRANSPORT: mock
+      VITE_MEDIA_AVAILABLE: 'false'
+      VITE_BASE: /oatdigitalroom/
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        working-directory: app
+        run: npm ci
+
+      - name: Validate catalog
+        run: node tools/validate-catalog.mjs
+
+      - name: Build
+        working-directory: app
+        run: npm run build
+
+      - name: Fail if a credential reached the bundle
+        # Cheap, and it catches the one mistake that would matter: renaming the endpoint
+        # variable to VITE_COGNIGY_ENDPOINT_URL, which would inline it into public JS.
+        run: |
+          if grep -rIqE 'endpoint-[a-z0-9-]+\.cognigy\.ai/[0-9a-f]{16,}' app/dist; then
+            echo "::error::A Cognigy endpoint token is present in the build output. Refusing to publish."
+            exit 1
+          fi
+          echo "No endpoint token found in build output."
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
