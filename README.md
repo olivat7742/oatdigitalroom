@@ -56,6 +56,48 @@ chat-drives-the-stage architecture works.
 **Licence:** none. All rights reserved. This is internal NiCE work published for
 collaboration convenience, not an open-source release.
 
+## Security posture
+
+This repository is public. Three controls keep credentials out of it.
+
+**1. The client never receives the token.** `COGNIGY_ENDPOINT_URL` is deliberately not
+`VITE_`-prefixed, so Vite never inlines it into the bundle. The dev server proxies
+`/api/cognigy` to the endpoint, server-side. Nothing in the browser, in devtools, or in a
+built asset contains the token. Renaming it to `VITE_COGNIGY_ENDPOINT_URL` would publish it
+to every visitor, so do not.
+
+**2. A pre-commit hook blocks leaks before they exist.** Enable it once per clone:
+
+```bash
+git config core.hooksPath tools/git-hooks
+```
+
+It blocks env files, the local tenant-identifier record, Cognigy endpoint URLs containing
+tokens, 40-plus character hex strings, and credential-shaped assignments.
+
+This hook is the primary control, not a backstop. GitHub secret scanning recognises
+vendor-shaped tokens such as AWS keys and GitHub PATs. A Cognigy endpoint URL token is a
+generic 64-character hex string, so GitHub will not flag it and push protection will not stop
+it. Generic-pattern scanning, which would catch it, needs GitHub Advanced Security and is not
+available on this repository.
+
+**3. GitHub secret scanning and push protection are enabled** as a second layer, for the
+vendor-shaped tokens they can recognise.
+
+### If a token is ever pushed
+
+Treat it as burned. Deleting the commit is not enough: it stays in forks, in the GitHub
+events API, and in anything that cached it. Rotate the Cognigy endpoint by regenerating its
+URL token, then clean history.
+
+### Deploying this beyond localhost
+
+The Vite proxy is a **development** feature. It does not exist in `vite build` output, so a
+statically hosted build cannot reach the agent at all. Hosting this for real needs a small
+server-side proxy holding the token as an environment variable, plus rate limiting, because
+an unauthenticated public endpoint that spends LLM budget will be abused. See Phase 5 in
+`docs/build-plan.md`.
+
 ## Owner
 
 Olivier Attia, Solutions Engineer, NiCE.
