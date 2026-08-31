@@ -10,6 +10,23 @@ Audiences: prospects, existing customers, NiCE sales reps, NiCE partners. All fo
 same content, which is public and approved for external use. Audience changes framing and
 depth only.
 
+## Try it
+
+**https://olivat7742.github.io/oatdigitalroom/**
+
+Published from `main` on every push. Ask it about helping agents, supervisors, or outbound.
+
+What you are looking at is the **architecture**, not the content. This build runs the fixture
+transport and has no video: the demo videos are unapproved NiCE marketing masters and are not
+in this repository, so the stage falls back to a synthetic playback clock over generated
+`MOCK ASSET` placeholders. Chapters, scrubbing, and the talk-track narration that arrives in
+the chat rail as playback crosses each chapter are all real and driven by the actual catalog
+metadata.
+
+The live Cognigy agent runs **locally only**, behind a dev proxy. A public static site has
+nowhere safe to keep a credential, so the published build has none and cannot reach Cognigy
+by construction.
+
 **Status:** working end to end. The portal talks to a live Cognigy AI Agent in OAT_Sandbox,
 which selects assets from the catalog and drives the video stage. Content is not yet approved
 for external use.
