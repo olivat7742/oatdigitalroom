@@ -39,7 +39,7 @@ for external use.
 | [docs/build-plan.md](docs/build-plan.md) | Phased plan, phase 0 is the current blocker list |
 | [contracts/stage-directive.schema.json](contracts/stage-directive.schema.json) | Agent to frontend contract. Keep it narrow. |
 | [contracts/demo-catalog.schema.json](contracts/demo-catalog.schema.json) | Catalog and tour schema |
-| [catalog/demo-catalog.json](catalog/demo-catalog.json) | Real catalog. Three real videos, all `approved: false` pending review. |
+| [catalog/demo-catalog.json](catalog/demo-catalog.json) | Real catalog, 30 assets, all `approved: false` pending review. **Generated** by `tools/build-catalog.mjs`; edit the META table there, not this file. Also fetched live by the Cognigy agent, so a push to `main` is a deploy. |
 | [catalog/chapters-todo.md](catalog/chapters-todo.md) | **Needs you.** Chapters and talk tracks for the three videos, plus the file-size problem. |
 | [catalog/demo-catalog.seed.json](catalog/demo-catalog.seed.json) | Annotated schema example showing a well-formed record. Not for use. |
 | [tools/validate-catalog.mjs](tools/validate-catalog.mjs) | Catalog validator, no dependencies. `node tools/validate-catalog.mjs` |

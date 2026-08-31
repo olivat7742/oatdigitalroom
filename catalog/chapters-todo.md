@@ -1,48 +1,54 @@
-# Chapters and talk tracks: done, pending your review
+# Catalog: what is done and what still needs a human
 
-**Status: chapters, talk tracks, talking points, summaries and product names are now in
-`demo-catalog.json` for all three videos.**
+**30 assets catalogued.** All findable and playable by the agent. Regenerate with:
 
-## How they were produced
+```bash
+node tools/build-catalog.mjs
+```
 
-Not guessed. I loaded each video in the browser, stepped through it frame by frame using the
-dev media route, and read what was actually on screen. Roughly ten sample points per video,
-plus tighter sampling around transitions.
+## Done
 
-That means the timestamps correspond to real scene changes and the talk tracks describe
-things genuinely visible in the frame. It does **not** mean I heard the voiceover. I read
-screens, on-screen titles and UI state, not audio. If the narration makes a point that never
-appears on screen, I will have missed it.
-
-## Corrections I made to the catalog
-
-The filenames were misleading in two of three cases:
-
-| Filename says | The video says |
+| | |
 |---|---|
-| NiCE Copilot for Agents | **CXone Agent Copilot** |
-| Outbound Engagement | **NiCE Proactive Outreach**, administered in **SmartReach** |
-| Supervisor | **CXone Supervisor Workspace** |
+| Assets | 30 unique, from 32 files |
+| Durations and sizes | Verified from disk |
+| Chapters and talk tracks | **3 of 30** |
+| Talking points | **3 of 30** |
+| Approved for external use | **0 of 30** |
 
-Three things the filenames gave no hint of, and which materially change how these should be
-pitched:
+The three originals (Agent Copilot, Proactive Outreach, Supervisor Workspace) have full
+chapters, talk tracks and talking points. The 27 NiCE World 2026 sessions have none.
 
-1. **The Copilot video is an insurance new-business use case.** A life insurance application on a live voice call, with Salesforce record creation and a DocuSign e-signature request. It is a vertical demo, not a generic overview. I tagged it `insurance` and `financial services`.
+## Two duplicates removed
 
-2. **The outbound video contains Cognigy.** The last third shows the outbound voice AI agent being authored and live test-called in Cognigy, with instructions, memory handling, grounding knowledge and tool calls visible. That makes it the only technical-depth asset in the catalog, and it is tagged `depth: technical` accordingly.
+Found by SHA256, not by guessing:
 
-3. **The supervisor video is about supervising AI agents**, not just human ones. AI agents are listed like staff with per-agent containment, quality score, sentiment and escalation rate, and failing conversations are flagged with a detected reason such as a conversation loop. This is the strongest differentiator in the three videos and the filename hides it completely.
+- `Screen Intelligence - Fuel CA AI beyond transcripts.mp4` is byte-identical to the `CX` version. `CA` is a typo.
+- `MCP - Give Your AI Agents the Tools They Need.mov` is byte-identical to `The Interconnected Agentic World.mov`. I read the title card: the content is the **Interconnected Agentic World** keynote by Benjamin Mayr, so the MCP filename is simply wrong. **If you actually have a separate MCP session, it is missing from the drop.**
 
-## What I need from you
+Both are excluded in `tools/build-catalog.mjs` via `skip: true`. Delete the redundant files when
+convenient; the script handles them either way.
 
-**1. Sanity-check the talk tracks.** You know these products and I inferred intent from
-frames. Anything that overclaims or misreads a screen, tell me and I will fix it. Particular
-attention to the Copilot video around 0:25 to 0:50, where I interpreted the App Space cards
-as Copilot acting autonomously rather than the agent triggering them.
+## What needs a human, in priority order
 
-**2. Approve, or do not.** All three are still `approved: false`, so nothing is retrievable at
-runtime. Watching a video is not the same as clearing it for external use, and that decision
-needs a named human. When you are ready, per asset:
+### 1. A content-governance problem in one session
+
+`AI Agents: Build with Ease, Deliver at Scale` is a screen recording that captured the
+presenter's **browser chrome**: their open tab bar and the address bar showing a personal
+SharePoint URL under `niceonline-my.sharepoint.com/.../personal/shelby_sparrow_nice_com/...`.
+
+That is visible in the first seconds of the video. It cannot go in front of a prospect as-is.
+Either re-crop it, re-record it, or leave it unapproved.
+
+I only sampled one frame of each of four sessions, so **assume others may have the same
+problem** until someone has watched them. This is the single strongest argument for a real
+review pass before anything is approved.
+
+### 2. Approval
+
+Everything is `approved: false`, which is why `PREVIEW_MODE = true` currently exists in the
+Cognigy `find_demo` tool. Set that to `false` and the agent correctly finds nothing until
+assets are cleared. Per asset:
 
 ```json
 "approved": true,
@@ -50,29 +56,37 @@ needs a named human. When you are ready, per asset:
 "reviewedOn": "2026-08-31"
 ```
 
-Then re-run the validator, which enforces that `approved: true` carries a reviewer and a date:
+Then `node tools/validate-catalog.mjs`, which enforces that `approved: true` carries a reviewer
+and a date.
 
-```bash
-node tools/validate-catalog.mjs
-```
+### 3. Chapters, on the assets worth it
 
-**3. One thing to check carefully before approving.** The on-screen figures are demo data:
-82% containment, 78% quality score, 156 escalations, 28 active AI agents, "voicemail detection
-averages under 90%". I wrote the talk tracks to avoid presenting any of these as product
-benchmarks, and added an explicit talking point on each asset saying the data is a demo
-environment. Worth confirming that framing is enough for your compliance people, because a
-prospect screenshotting "82% containment" as a NiCE commitment is a real risk on a
-self-service tool.
+Not all 27 need them. Roughly 5.5 hours of conference content, and chaptering is manual.
 
-## File size: deferred, not forgotten
+Suggested priority, based on what a visitor is most likely to ask for:
 
-Two of the three are 11 to 15 Mbps presentation masters, including 339 MB for a 2:59 clip.
-Deliberately ignored as of 2026-08-31 because this runs locally as a mockup, where it costs
-nothing. Recorded in `../docs/build-plan.md` under Phase 5 as a blocker on public exposure.
+1. `ai-agents-build-deliver-at-scale` (29:47) — the "how do I build one" answer, and the longest, so most in need of navigation
+2. `interconnected-agentic-world` (21:16) — the architecture keynote
+3. `supervisors-manage-human-and-ai` (11:13) — extends an already-strong story
+4. The five industry sessions — a prospect in retail wants the retail moment, not 8 minutes
+5. `orchestrating-customer-journeys` (23:08)
 
-## Also outstanding: coverage
+The others are fine played from the start.
 
-Three videos is thin for the Phase 1 selection check. You now have one technical asset (the
-Cognigy portion of the outbound video) and two functional ones, but no self-service or
-containment demo, and nothing for `it-architect` beyond that one segment. The 8-question check
-cannot properly test use-case discrimination on three assets.
+For each, note three to six timestamps with a label and one sentence of what you would say
+there, and paste it back in any format. I will convert it. I can also derive them by stepping
+through the video as I did for the first three, but at roughly ten samples per video that is
+slow for a 30-minute session, so telling me is faster if you already know the content.
+
+### 4. Summaries and product names
+
+The 27 summaries are derived from title cards and filenames, not from watching. Filenames have
+already been wrong twice in this project, so treat them as drafts. The summary is what
+retrieval matches a visitor's question against, so a corrected one is worth more than any
+prompt tuning.
+
+## Deferred
+
+**File sizes.** Nine assets exceed 200 MB, and the set totals roughly 3.9 GB. Irrelevant while
+this runs locally as a mockup, per your call. Recorded in `../docs/build-plan.md` under Phase 5
+as a blocker on public exposure, not before.
