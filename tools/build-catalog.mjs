@@ -260,6 +260,63 @@ const META = {
     depth: 'overview',
     keywords: ['hybrid workforce', 'performance', 'systemic', 'individual', 'wfm', 'productivity', 'management'],
   },
+  'NiCE Performance Management  Demo.mp4': {
+    id: 'performance-management-demo',
+    title: 'Performance Management',
+    summary:
+      'A product demo structured as a day in the life. A per-agent metrics table colour-coded on handle time, sales, active time and AI usage; the manager dashboard with handled calls, AI usage and Salesforce case volumes; the agent\'s own view of their numbers; KPI trends with coaching events marked against them; and the configuration behind it, including agent skills and CRM data sources.',
+    products: ['CXone Performance Management'],
+    useCases: ['performance management', 'coaching', 'agent scorecards', 'KPI reporting', 'AI adoption tracking'],
+    personas: ['agent-supervisor', 'contact-center-ops', 'cx-leader'],
+    depth: 'functional',
+    chapters: [
+      {
+        t: 0,
+        label: 'A day in the life',
+        talkTrack:
+          'It is framed as a day in the life rather than a feature tour, which makes it easier to follow if you are not already living in these dashboards.',
+      },
+      {
+        t: 25,
+        label: 'Per-agent metrics at a glance',
+        talkTrack:
+          'Every agent on one screen: handle time, sales, active time, and AI usage. The colour coding is the point, you are looking for the red cells rather than reading twenty rows.',
+      },
+      {
+        t: 65,
+        label: 'The manager dashboard',
+        talkTrack:
+          'The manager view pulls in handled volume, AI usage, and Salesforce case counts side by side. Note that AI adoption is tracked as a metric in its own right.',
+      },
+      {
+        t: 115,
+        label: "The agent's own view",
+        talkTrack:
+          'This is the part people forget to ask about. The agent sees their own numbers, so performance management is not something done to them out of sight.',
+      },
+      {
+        t: 175,
+        label: 'KPI trends and coaching events',
+        talkTrack:
+          'Here is where it earns its keep. Individual trends against the team, with coaching events marked on the same timeline, so you can see whether coaching actually moved anything.',
+      },
+      {
+        t: 250,
+        label: 'Configuration and data sources',
+        talkTrack:
+          'Briefly under the hood: agent skills, and the CRM connections feeding it. Worth noting for whoever will ask where the data comes from.',
+      },
+    ],
+    talkingPoints: [
+      'Structured as a day in the life across manager and agent roles rather than as a feature tour',
+      'Per-agent metrics include AI usage alongside traditional measures like handle time and active time',
+      'Agents can see their own performance, not just their supervisor',
+      'Coaching events are plotted against KPI trends, so the effect of coaching is visible',
+      'Shows CRM data sources including Salesforce, and ServiceNow case counts on the dashboard',
+      'All figures and agent names on screen are demo data, not a customer benchmark',
+    ],
+    keywords: ['performance management', 'kpi', 'scorecard', 'coaching', 'metrics', 'handle time', 'aht', 'ai usage', 'ai adoption', 'dashboard', 'agent performance', 'salesforce', 'servicenow', 'day in the life', 'trends'],
+  },
   'Multimodal Experiences - Move with Customers Across Every Channel.mp4': {
     id: 'multimodal-experiences',
     title: 'Multimodal Experiences Across Every Channel',
@@ -462,10 +519,16 @@ for (const name of files) {
       url: `/media/${encodeURIComponent(name)}`,
       requiresSignedUrl: false,
     },
-    ...(prior.chapters?.length ? { chapters: prior.chapters } : {}),
+    // Prior wins over META, so hand-editing the catalog is never silently reverted. META acts
+    // as the seed for a newly added asset.
+    ...(prior.chapters?.length ? { chapters: prior.chapters } : meta.chapters?.length ? { chapters: meta.chapters } : {}),
     ...(prior.prerequisites?.length ? { prerequisites: prior.prerequisites } : {}),
     ...(prior.followUps?.length ? { followUps: prior.followUps } : {}),
-    ...(prior.talkingPoints?.length ? { talkingPoints: prior.talkingPoints } : {}),
+    ...(prior.talkingPoints?.length
+      ? { talkingPoints: prior.talkingPoints }
+      : meta.talkingPoints?.length
+        ? { talkingPoints: meta.talkingPoints }
+        : {}),
     keywords: meta.keywords,
     ...(prior.reviewedOn ? { reviewedOn: prior.reviewedOn } : {}),
     ...(prior.reviewedBy ? { reviewedBy: prior.reviewedBy } : {}),
