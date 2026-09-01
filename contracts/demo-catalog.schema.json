@@ -37,7 +37,8 @@
         },
         "type": {
           "type": "string",
-          "enum": ["video", "walkthrough", "diagram", "comparison", "document"]
+          "enum": ["video", "walkthrough", "diagram", "comparison", "document", "embed"],
+          "description": "embed is a third-party player in an iframe, currently YouTube. Unlike video, the host page cannot read its playback position, so chapters and talk-track narration do not apply."
         },
         "approved": {
           "type": "boolean",
@@ -87,6 +88,10 @@
               "description": "Where the asset physically lives, for example sharepoint, vidyard, youtube, local."
             },
             "url": { "type": "string" },
+            "watchUrl": {
+              "type": "string",
+              "description": "For embeds: the canonical public page for the asset, used for attribution and as a fallback if the iframe is blocked."
+            },
             "thumbnailUrl": { "type": "string" },
             "requiresSignedUrl": {
               "type": "boolean",

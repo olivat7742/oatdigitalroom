@@ -14,7 +14,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const ASSET_TYPES = ['video', 'walkthrough', 'diagram', 'comparison', 'document']
+const ASSET_TYPES = ['video', 'walkthrough', 'diagram', 'comparison', 'document', 'embed']
 const DEPTHS = ['overview', 'functional', 'technical']
 const PERSONAS = [
   'cx-leader',
@@ -124,6 +124,17 @@ function validate(file) {
         }
       }
       if (!asset.durationSeconds) warnings.push(`${where}: video has no durationSeconds`)
+    }
+
+    if (asset.type === 'embed') {
+      // Chapters are impossible for an embed: the host page cannot read playback position
+      // across the iframe boundary. So no chapter warnings here, only what an embed needs.
+      if (!asset.source?.watchUrl) {
+        warnings.push(`${where}: embed has no source.watchUrl, so it cannot be attributed or linked out`)
+      }
+      if (asset.chapters?.length) {
+        errors.push(`${where}: embeds cannot have chapters, the host page cannot read their playback position`)
+      }
     }
 
     if (asset.type === 'walkthrough' && !asset.steps?.length) {

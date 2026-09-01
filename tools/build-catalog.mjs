@@ -437,6 +437,125 @@ const META = {
   },
 }
 
+/**
+ * Curation for the public NiCE YouTube channel, keyed by videoId. Source data comes from
+ * catalog/youtube-videos.json (see tools/fetch-youtube.ps1).
+ *
+ * These differ from the local files in two important ways:
+ *
+ *  - They are ALREADY PUBLIC on NiCE's official channel, so they are genuinely cleared for
+ *    external use. That makes them the only assets that can honestly be approved:true, and the
+ *    only ones that work on the public GitHub Pages build.
+ *  - They render in an iframe, so the host page cannot read playback position. No chapters, no
+ *    talk-track narration, and position is a load-time start offset rather than a live seek.
+ *
+ * `skip` excludes an asset with the reason. The Digital Room exists to SHOW how the technology
+ * works, so analyst and partner interviews and brand advertising are excluded: they are
+ * legitimate marketing but they do not demonstrate anything.
+ */
+const YOUTUBE_META = {
+  LcF8JMUi6Kk: {
+    id: 'td-bank-engagement-hub',
+    title: 'TD Bank on the NiCE Engagement Hub',
+    summary:
+      'Customer story. TD Bank on their use of the NiCE Engagement Hub. Public customer proof rather than a product walkthrough.',
+    products: ['NiCE Engagement Hub'],
+    useCases: ['customer story', 'digital engagement', 'proof point'],
+    personas: ['cx-leader', 'procurement'],
+    depth: 'overview',
+    industries: ['financial services', 'banking'],
+    keywords: ['td bank', 'customer story', 'case study', 'reference', 'banking', 'engagement hub', 'proof', 'who uses'],
+  },
+  L_U0XM0Ys88: {
+    id: 'hyatt-copilot-search-time',
+    title: 'Hyatt: cutting agent search time with AI Copilot',
+    summary:
+      'Customer story. How Hyatt reduced search time for more than 250 human agents using AI Copilot. Public customer proof.',
+    products: ['CXone Agent Copilot'],
+    useCases: ['customer story', 'agent assist', 'knowledge search', 'proof point'],
+    personas: ['cx-leader', 'agent-supervisor', 'procurement'],
+    depth: 'overview',
+    industries: ['hospitality', 'travel'],
+    keywords: ['hyatt', 'customer story', 'case study', 'reference', 'hospitality', 'hotel', 'copilot', 'search time', 'knowledge', 'proof', 'results'],
+  },
+  '7jjNtuX_EQ4': {
+    id: 'bosch-agentic-ai-scale',
+    title: 'Bosch: agentic AI across 90+ agents worldwide',
+    summary:
+      'Customer story. Bosch running agentic AI across more than 90 agents worldwide. Public customer proof of agentic AI at scale.',
+    products: ['Cognigy AI Agents'],
+    useCases: ['customer story', 'agentic AI', 'scale', 'proof point'],
+    personas: ['cx-leader', 'it-architect', 'procurement'],
+    depth: 'overview',
+    industries: ['manufacturing', 'automotive'],
+    keywords: ['bosch', 'customer story', 'case study', 'reference', 'manufacturing', 'agentic', 'scale', 'worldwide', 'multilingual', 'proof', 'who uses'],
+  },
+  '4HSUQHW5gBM': {
+    id: 'agentic-ai-customer-service',
+    title: 'Agentic AI customer service',
+    summary:
+      'Short public positioning piece on agentic AI in customer service, framed around effortless support and business results.',
+    products: ['Cognigy AI Agents', 'CXone Mpower'],
+    useCases: ['self-service automation', 'agentic AI', 'positioning'],
+    personas: ['cx-leader'],
+    depth: 'overview',
+    keywords: ['agentic ai', 'customer service', 'effortless', 'automation', 'self service', 'overview', 'introduction'],
+  },
+  DIjcwghxVlI: {
+    id: 'unified-cx-platform',
+    title: 'One connected CX platform',
+    summary:
+      'Short public positioning piece on avoiding the customer breaking point by unifying CX on one connected system.',
+    products: ['CXone Mpower'],
+    useCases: ['platform strategy', 'consolidation', 'positioning'],
+    personas: ['cx-leader', 'it-architect'],
+    depth: 'overview',
+    keywords: ['unified', 'one platform', 'consolidation', 'breaking point', 'disconnected', 'point solutions', 'silos'],
+  },
+  '4Ms9_p7Qflk': {
+    id: 'exec-why-cx-goes-ai-first',
+    title: 'Scott Russell on why CX is going AI-first',
+    summary:
+      'One minute of executive perspective from NiCE CEO Scott Russell on why customer experience is becoming AI-first. Opinion and framing, not a demonstration.',
+    products: ['CXone Mpower'],
+    useCases: ['executive perspective', 'market context', 'positioning'],
+    personas: ['cx-leader', 'procurement'],
+    depth: 'overview',
+    keywords: ['scott russell', 'ceo', 'executive', 'ai-first', 'strategy', 'vision', 'why now', 'market'],
+  },
+  I0Xjib5lOsA: {
+    id: 'exec-scaling-ai',
+    title: 'Philipp Heltewig on scaling AI',
+    summary:
+      'Under a minute of executive perspective from Cognigy co-founder Philipp Heltewig on what it takes to scale AI. Opinion and framing, not a demonstration.',
+    products: ['Cognigy AI Agents'],
+    useCases: ['executive perspective', 'scaling', 'positioning'],
+    personas: ['cx-leader', 'it-architect'],
+    depth: 'overview',
+    keywords: ['philipp heltewig', 'cognigy', 'founder', 'executive', 'scaling', 'scale', 'vision'],
+  },
+  mLnDYUTE3vA: {
+    id: 'exec-human-and-ai-orchestration',
+    title: 'Scott Russell on orchestrating AI and human work',
+    summary:
+      'One minute of executive perspective on unifying AI and human orchestration in CX. Opinion and framing, not a demonstration.',
+    products: ['CXone Mpower'],
+    useCases: ['executive perspective', 'human and AI collaboration', 'positioning'],
+    personas: ['cx-leader'],
+    depth: 'overview',
+    keywords: ['scott russell', 'executive', 'orchestration', 'human and ai', 'unified', 'workforce'],
+  },
+
+  // Excluded. Legitimate marketing, but they do not show how the technology works.
+  VOst6YJO7bc: { skip: true, reason: 'NiCE TV partner interview (Kura, FourNet). Channel marketing, not a demonstration.' },
+  BKsKrK1tGa4: { skip: true, reason: 'NiCE TV partner interview (Natilik). Channel marketing, not a demonstration.' },
+  OJoS2Xc8kCI: { skip: true, reason: 'NiCE TV analyst interview (TalkingPointz). Analyst opinion, not a demonstration.' },
+  nRGlhiHhG1M: { skip: true, reason: 'NiCE TV partner interview (AWS). Channel marketing, not a demonstration.' },
+  PMw7bII18w4: { skip: true, reason: 'NiCE TV partner interview (Route 101). Channel marketing, not a demonstration.' },
+  At9ewMSpFxw: { skip: true, reason: 'NiCE TV CEO interview at NiCE World London. Overlaps the shorter AI at Scale clips already included.' },
+  '3MJfI69Mhs0': { skip: true, reason: 'Kristen Bell brand advertising. Not a demonstration of anything.' },
+}
+
 const MIME_EXT = new Set(['.mp4', '.mov', '.m4v', '.webm'])
 
 function readExisting() {
@@ -544,6 +663,65 @@ for (const name of files) {
   assets.push(asset)
 }
 
+// YouTube assets. Public on NiCE's official channel, so unlike the local files these are
+// genuinely cleared for external use and they work on the public Pages build.
+function readYouTube() {
+  const p = path.join(repoRoot, 'catalog', 'youtube-videos.json')
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+const youtube = readYouTube()
+const ytSkipped = []
+
+if (youtube?.videos?.length) {
+  for (const video of youtube.videos) {
+    const meta = YOUTUBE_META[video.videoId]
+    if (!meta) {
+      warnings.push(`No YOUTUBE_META for ${video.videoId} "${video.title}". Curate it or mark it skip.`)
+      continue
+    }
+    if (meta.skip) {
+      ytSkipped.push(`${video.videoId} "${video.title}" -> ${meta.reason}`)
+      continue
+    }
+
+    const prior = byId.get(meta.id) ?? {}
+
+    assets.push({
+      id: meta.id,
+      title: meta.title,
+      summary: prior.summary && prior.reviewedBy && prior.reviewedBy !== 'PLACEHOLDER' ? prior.summary : meta.summary,
+      type: 'embed',
+      // Published publicly by NiCE on their official channel. That act of publishing IS the
+      // external-use clearance, which is why these can be approved while the internal masters
+      // cannot. Attributed to the channel rather than to a person, so it stays auditable.
+      approved: true,
+      products: meta.products,
+      useCases: meta.useCases,
+      personas: meta.personas,
+      depth: meta.depth,
+      ...(meta.industries ? { industries: meta.industries } : {}),
+      durationSeconds: video.lengthSeconds ?? undefined,
+      source: {
+        provider: 'youtube',
+        url: video.embedUrl,
+        watchUrl: video.watchUrl,
+        thumbnailUrl: video.thumbnailUrl,
+        requiresSignedUrl: false,
+      },
+      ...(prior.followUps?.length ? { followUps: prior.followUps } : {}),
+      ...(prior.talkingPoints?.length ? { talkingPoints: prior.talkingPoints } : {}),
+      keywords: meta.keywords,
+      reviewedOn: (youtube.videos[0]?.published ?? '').slice(0, 10) || '2026-08-31',
+      reviewedBy: 'Published publicly by NiCE on its official YouTube channel',
+    })
+  }
+}
+
 // Refuse to write a partial catalog. Writing one would delete the hand-authored chapters of
 // any asset whose file is present but unlisted.
 if (missingMeta.length) {
@@ -569,6 +747,10 @@ console.log(`Media dir: ${MEDIA_DIR}`)
 if (skipped.length) {
   console.log('\nSkipped duplicates:')
   for (const s of skipped) console.log(`  - ${s}`)
+}
+if (ytSkipped.length) {
+  console.log('\nYouTube videos excluded by curation:')
+  for (const s of ytSkipped) console.log(`  - ${s}`)
 }
 if (warnings.length) {
   console.log('\nWarnings:')

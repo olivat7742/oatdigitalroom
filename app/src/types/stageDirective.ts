@@ -9,7 +9,18 @@
 
 export const STAGE_DIRECTIVE_VERSION = 1
 
-export type StageAssetType = 'video' | 'walkthrough' | 'diagram' | 'comparison' | 'document'
+export type StageAssetType =
+  | 'video'
+  | 'walkthrough'
+  | 'diagram'
+  | 'comparison'
+  | 'document'
+  /**
+   * Third-party player in an iframe, currently YouTube. Differs from 'video' in that the host
+   * page cannot read playback position, so position is a load-time start offset and chapter
+   * narration does not apply.
+   */
+  | 'embed'
 
 export type StageAction = 'show' | 'play' | 'pause' | 'seek' | 'highlight' | 'step' | 'clear'
 
@@ -43,6 +54,8 @@ export interface StageAsset {
   title?: string
   /** Resolved by the backend. The client never assembles a URL. */
   src?: string
+  /** For embeds: the canonical public page, for attribution and as a fallback. */
+  watchUrl?: string
   posterUrl?: string
   durationSeconds?: number
   chapters?: Chapter[]
@@ -89,6 +102,7 @@ const ASSET_TYPES: readonly StageAssetType[] = [
   'diagram',
   'comparison',
   'document',
+  'embed',
 ]
 
 function isRecord(value: unknown): value is Record<string, unknown> {

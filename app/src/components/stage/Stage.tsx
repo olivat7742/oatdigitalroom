@@ -10,6 +10,7 @@ import type { TourInfo } from '@/types/stageDirective'
 import { VideoAsset } from './VideoAsset'
 import { WalkthroughAsset } from './WalkthroughAsset'
 import { StaticAsset } from './StaticAsset'
+import { EmbedAsset } from './EmbedAsset'
 import { brand } from '@/theme'
 
 function TourProgress({ tour }: { tour: TourInfo }) {
@@ -87,6 +88,7 @@ export function Stage() {
         {/* key={asset.id} deliberately remounts renderers so per-asset playback and step
             state resets, rather than being manually cleared in a dozen places. */}
         {asset?.type === 'video' && <VideoAsset key={asset.id} asset={asset} />}
+        {asset?.type === 'embed' && <EmbedAsset key={asset.id} asset={asset} />}
         {asset?.type === 'walkthrough' && <WalkthroughAsset key={asset.id} asset={asset} />}
         {asset && ['diagram', 'comparison', 'document'].includes(asset.type) && (
           <StaticAsset key={asset.id} asset={asset} />

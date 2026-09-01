@@ -30,6 +30,8 @@ function formatDuration(seconds: number | undefined): string {
 export interface CatalogSource {
   provider: string
   url: string
+  /** For embeds: the canonical public page, for attribution and as a fallback. */
+  watchUrl?: string
   thumbnailUrl?: string
   requiresSignedUrl?: boolean
 }
@@ -93,13 +95,17 @@ export function toStageAsset(id: string): StageAsset | null {
     title: entry.title,
   }
 
-  // Withhold src entirely when media is unavailable, rather than emitting a URL that
-  // 404s. hasRealSource() then reports false and the renderer degrades deliberately.
-  if (MEDIA_AVAILABLE && entry.source.url) asset.src = entry.source.url
+  // Embeds are hosted publicly by a third party, so they work everywhere including the static
+  // Pages build. Only locally-served media is withheld when MEDIA_AVAILABLE is false, and it is
+  // withheld entirely rather than emitting a URL that 404s: hasRealSource() then reports false
+  // and the renderer degrades deliberately.
+  const isEmbed = entry.type === 'embed'
+  if ((MEDIA_AVAILABLE || isEmbed) && entry.source.url) asset.src = entry.source.url
+  if (entry.source.watchUrl) asset.watchUrl = entry.source.watchUrl
 
   if (entry.source.thumbnailUrl) {
     asset.posterUrl = entry.source.thumbnailUrl
-  } else if (!MEDIA_AVAILABLE) {
+  } else if (!MEDIA_AVAILABLE && !isEmbed) {
     asset.posterUrl = placeholderImage(entry.title, formatDuration(entry.durationSeconds))
   }
 

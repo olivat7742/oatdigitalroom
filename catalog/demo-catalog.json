@@ -1420,6 +1420,342 @@
         "rip and replace"
       ],
       "sizeMB": 38.3
+    },
+    {
+      "id": "td-bank-engagement-hub",
+      "title": "TD Bank on the NiCE Engagement Hub",
+      "summary": "Customer story. TD Bank on their use of the NiCE Engagement Hub. Public customer proof rather than a product walkthrough.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "NiCE Engagement Hub"
+      ],
+      "useCases": [
+        "customer story",
+        "digital engagement",
+        "proof point"
+      ],
+      "personas": [
+        "cx-leader",
+        "procurement"
+      ],
+      "depth": "overview",
+      "industries": [
+        "financial services",
+        "banking"
+      ],
+      "durationSeconds": 171,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/LcF8JMUi6Kk",
+        "watchUrl": "https://www.youtube.com/watch?v=LcF8JMUi6Kk",
+        "thumbnailUrl": "https://i.ytimg.com/vi/LcF8JMUi6Kk/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "td bank",
+        "customer story",
+        "case study",
+        "reference",
+        "banking",
+        "engagement hub",
+        "proof",
+        "who uses"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "exec-why-cx-goes-ai-first",
+      "title": "Scott Russell on why CX is going AI-first",
+      "summary": "One minute of executive perspective from NiCE CEO Scott Russell on why customer experience is becoming AI-first. Opinion and framing, not a demonstration.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "CXone Mpower"
+      ],
+      "useCases": [
+        "executive perspective",
+        "market context",
+        "positioning"
+      ],
+      "personas": [
+        "cx-leader",
+        "procurement"
+      ],
+      "depth": "overview",
+      "durationSeconds": 64,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/4Ms9_p7Qflk",
+        "watchUrl": "https://www.youtube.com/watch?v=4Ms9_p7Qflk",
+        "thumbnailUrl": "https://i.ytimg.com/vi/4Ms9_p7Qflk/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "scott russell",
+        "ceo",
+        "executive",
+        "ai-first",
+        "strategy",
+        "vision",
+        "why now",
+        "market"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "hyatt-copilot-search-time",
+      "title": "Hyatt: cutting agent search time with AI Copilot",
+      "summary": "Customer story. How Hyatt reduced search time for more than 250 human agents using AI Copilot. Public customer proof.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "CXone Agent Copilot"
+      ],
+      "useCases": [
+        "customer story",
+        "agent assist",
+        "knowledge search",
+        "proof point"
+      ],
+      "personas": [
+        "cx-leader",
+        "agent-supervisor",
+        "procurement"
+      ],
+      "depth": "overview",
+      "industries": [
+        "hospitality",
+        "travel"
+      ],
+      "durationSeconds": 139,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/L_U0XM0Ys88",
+        "watchUrl": "https://www.youtube.com/watch?v=L_U0XM0Ys88",
+        "thumbnailUrl": "https://i.ytimg.com/vi/L_U0XM0Ys88/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "hyatt",
+        "customer story",
+        "case study",
+        "reference",
+        "hospitality",
+        "hotel",
+        "copilot",
+        "search time",
+        "knowledge",
+        "proof",
+        "results"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "bosch-agentic-ai-scale",
+      "title": "Bosch: agentic AI across 90+ agents worldwide",
+      "summary": "Customer story. Bosch running agentic AI across more than 90 agents worldwide. Public customer proof of agentic AI at scale.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "Cognigy AI Agents"
+      ],
+      "useCases": [
+        "customer story",
+        "agentic AI",
+        "scale",
+        "proof point"
+      ],
+      "personas": [
+        "cx-leader",
+        "it-architect",
+        "procurement"
+      ],
+      "depth": "overview",
+      "industries": [
+        "manufacturing",
+        "automotive"
+      ],
+      "durationSeconds": 138,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/7jjNtuX_EQ4",
+        "watchUrl": "https://www.youtube.com/watch?v=7jjNtuX_EQ4",
+        "thumbnailUrl": "https://i.ytimg.com/vi/7jjNtuX_EQ4/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "bosch",
+        "customer story",
+        "case study",
+        "reference",
+        "manufacturing",
+        "agentic",
+        "scale",
+        "worldwide",
+        "multilingual",
+        "proof",
+        "who uses"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "exec-scaling-ai",
+      "title": "Philipp Heltewig on scaling AI",
+      "summary": "Under a minute of executive perspective from Cognigy co-founder Philipp Heltewig on what it takes to scale AI. Opinion and framing, not a demonstration.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "Cognigy AI Agents"
+      ],
+      "useCases": [
+        "executive perspective",
+        "scaling",
+        "positioning"
+      ],
+      "personas": [
+        "cx-leader",
+        "it-architect"
+      ],
+      "depth": "overview",
+      "durationSeconds": 48,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/I0Xjib5lOsA",
+        "watchUrl": "https://www.youtube.com/watch?v=I0Xjib5lOsA",
+        "thumbnailUrl": "https://i.ytimg.com/vi/I0Xjib5lOsA/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "philipp heltewig",
+        "cognigy",
+        "founder",
+        "executive",
+        "scaling",
+        "scale",
+        "vision"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "agentic-ai-customer-service",
+      "title": "Agentic AI customer service",
+      "summary": "Short public positioning piece on agentic AI in customer service, framed around effortless support and business results.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "Cognigy AI Agents",
+        "CXone Mpower"
+      ],
+      "useCases": [
+        "self-service automation",
+        "agentic AI",
+        "positioning"
+      ],
+      "personas": [
+        "cx-leader"
+      ],
+      "depth": "overview",
+      "durationSeconds": 78,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/4HSUQHW5gBM",
+        "watchUrl": "https://www.youtube.com/watch?v=4HSUQHW5gBM",
+        "thumbnailUrl": "https://i.ytimg.com/vi/4HSUQHW5gBM/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "agentic ai",
+        "customer service",
+        "effortless",
+        "automation",
+        "self service",
+        "overview",
+        "introduction"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "unified-cx-platform",
+      "title": "One connected CX platform",
+      "summary": "Short public positioning piece on avoiding the customer breaking point by unifying CX on one connected system.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "CXone Mpower"
+      ],
+      "useCases": [
+        "platform strategy",
+        "consolidation",
+        "positioning"
+      ],
+      "personas": [
+        "cx-leader",
+        "it-architect"
+      ],
+      "depth": "overview",
+      "durationSeconds": 52,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/DIjcwghxVlI",
+        "watchUrl": "https://www.youtube.com/watch?v=DIjcwghxVlI",
+        "thumbnailUrl": "https://i.ytimg.com/vi/DIjcwghxVlI/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "unified",
+        "one platform",
+        "consolidation",
+        "breaking point",
+        "disconnected",
+        "point solutions",
+        "silos"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
+    },
+    {
+      "id": "exec-human-and-ai-orchestration",
+      "title": "Scott Russell on orchestrating AI and human work",
+      "summary": "One minute of executive perspective on unifying AI and human orchestration in CX. Opinion and framing, not a demonstration.",
+      "type": "embed",
+      "approved": true,
+      "products": [
+        "CXone Mpower"
+      ],
+      "useCases": [
+        "executive perspective",
+        "human and AI collaboration",
+        "positioning"
+      ],
+      "personas": [
+        "cx-leader"
+      ],
+      "depth": "overview",
+      "durationSeconds": 61,
+      "source": {
+        "provider": "youtube",
+        "url": "https://www.youtube-nocookie.com/embed/mLnDYUTE3vA",
+        "watchUrl": "https://www.youtube.com/watch?v=mLnDYUTE3vA",
+        "thumbnailUrl": "https://i.ytimg.com/vi/mLnDYUTE3vA/hqdefault.jpg",
+        "requiresSignedUrl": false
+      },
+      "keywords": [
+        "scott russell",
+        "executive",
+        "orchestration",
+        "human and ai",
+        "unified",
+        "workforce"
+      ],
+      "reviewedOn": "2026-08-27",
+      "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     }
   ],
   "tours": [

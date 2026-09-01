@@ -29,7 +29,8 @@
             "id": { "type": "string", "description": "Catalog asset id." },
             "type": {
               "type": "string",
-              "enum": ["video", "walkthrough", "diagram", "comparison", "document"]
+              "enum": ["video", "walkthrough", "diagram", "comparison", "document", "embed"],
+              "description": "embed is a third-party player rendered in an iframe, currently YouTube. It differs from video in two ways that matter: position is applied as a start offset when the frame loads rather than as a live seek, and the host page cannot read playback state, so chapter narration does not fire."
             },
             "title": { "type": "string" },
             "src": { "type": "string", "description": "Resolved playable or renderable URL. Resolved by the backend, never assembled by the agent." },
