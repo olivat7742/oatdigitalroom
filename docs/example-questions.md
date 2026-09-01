@@ -161,6 +161,32 @@ forty seconds to the relevant screen beats minute zero of a thirty-minute sessio
 | "How do you stop the AI making things up?" | Turning Knowledge into Action, 17:50 |
 | "How does knowledge management feed the AI?" | Turning Knowledge into Action, 17:50 |
 
+## Customer proof
+
+These are **YouTube embeds** from NiCE's public channel, so they are the only assets that play
+on the public Pages link. They cannot be chapter-jumped: the host page cannot read an iframe's
+playback position, so `position` only works as a start offset when the frame loads.
+
+| Ask | Plays |
+|---|---|
+| "Which customers are using this?" | TD Bank, Hyatt or Bosch, depending on phrasing |
+| "Do you have any case studies?" | As above |
+| "Anything from a bank?" | TD Bank on the NiCE Engagement Hub, 2:51 |
+| "Show me a hospitality example" | Hyatt: cutting agent search time, 2:19 |
+| "Has anyone deployed this at scale globally?" | Bosch: agentic AI across 90+ agents, 2:18 |
+| "Do you have anything about Bosch?" | Bosch, 2:18 |
+
+## Executive perspective
+
+Short public clips. Useful when the room contains a CX leader rather than an operator.
+
+| Ask | Plays |
+|---|---|
+| "Why is CX going AI-first?" | Scott Russell, 1:04 |
+| "What does your CEO say about AI?" | Scott Russell, 1:04 |
+| "What does it take to scale AI?" | Philipp Heltewig, 0:48 |
+| "How do humans and AI divide the work?" | Scott Russell on orchestration, 1:01 |
+
 ## Commercial and adoption
 
 | Ask | Plays |

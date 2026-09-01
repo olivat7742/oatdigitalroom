@@ -16,12 +16,16 @@ depth only.
 
 Published from `main` on every push. Ask it about helping agents, supervisors, or outbound.
 
-What you are looking at is the **architecture**, not the content. This build runs the fixture
-transport and has no video: the demo videos are unapproved NiCE marketing masters and are not
-in this repository, so the stage falls back to a synthetic playback clock over generated
-`MOCK ASSET` placeholders. Chapters, scrubbing, and the talk-track narration that arrives in
-the chat rail as playback crosses each chapter are all real and driven by the actual catalog
-metadata.
+**Eight assets play for real on that link**, embedded from NiCE's public YouTube channel:
+customer stories from TD Bank, Hyatt and Bosch, plus short product and executive pieces. Those
+are already published publicly by NiCE, so they are genuinely cleared for external use.
+
+The other 31 assets are local video files that are **not** in this repository: they are
+unapproved NiCE marketing masters. For those, the stage falls back to a synthetic playback
+clock over generated `MOCK ASSET` placeholders. Chapters, scrubbing, and the talk-track
+narration that arrives in the chat rail as playback crosses each chapter are all real and
+driven by the actual catalog metadata, so the mechanism is fully visible even where the content
+is not.
 
 The live Cognigy agent runs **locally only**, behind a dev proxy. A public static site has
 nowhere safe to keep a credential, so the published build has none and cannot reach Cognigy
