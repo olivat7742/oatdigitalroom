@@ -49,22 +49,46 @@ if (-not (Test-Path $indexFile)) {
 $index = [System.IO.File]::ReadAllText($indexFile) | ConvertFrom-Json
 $targets = @($index.items | Where-Object { $_.locale -eq 'en' })
 
-# The authoritative types, harvested from the listing's own filter by
-# tools/fetch-nice-resource-types.ps1. Where a slug appears here, this is what the site itself
-# says the resource is, and it overrides everything Resolve-Type can infer from the text.
+# The authoritative facets, harvested from the listing's own filters by
+# tools/fetch-nice-resource-facets.ps1: content type, solution category and industry. Where a
+# slug appears here, this is what the site itself says, and the type overrides everything
+# Resolve-Type can infer from the text.
 # Optional: without the file the script still runs, it just infers more and knows less.
-$typesFile = Join-Path $repoRoot 'catalog\nice-resource-types.json'
+$typesFile = Join-Path $repoRoot 'catalog\nice-resource-facets.json'
+
+# The facets file stores the site's own labels verbatim, which are plural collection names
+# ("Case Studies"). Inferred types are singular ("Case study"). Merging the two unnormalised
+# put both "Webinars" and "Webinar" in the same column, which would split any group-by. The
+# facets file stays a faithful mirror of the site; normalising is this consumer's job.
+$siteTypeLabels = @{
+  'Brochure' = 'Brochure'; 'Case Studies' = 'Case study'; 'Datasheets' = 'Datasheet'
+  'Demo Videos' = 'Demo video'; 'eBook' = 'eBook'; 'Infographics' = 'Infographic'
+  'Podcasts' = 'Podcast'; 'Product Videos' = 'Product video'; 'Reports' = 'Report'
+  'Testimonials' = 'Testimonial'; 'Webinars' = 'Webinar'; 'White Papers' = 'White paper'
+}
+function Normalize-TypeLabel([string]$label) {
+  if (-not $label) { return $label }
+  if ($siteTypeLabels.ContainsKey($label)) { return $siteTypeLabels[$label] }
+  # A term added to the site that this map does not know. Pass it through rather than drop it,
+  # but say so, because it means the map needs a line.
+  Write-Host "  NOTE: unmapped site type label '$label', passing through as-is"
+  $label
+}
 $authoritative = @{}
 $authoritativeAll = @{}
+$authoritativeCategories = @{}
+$authoritativeIndustries = @{}
 if (Test-Path $typesFile) {
   $t = [System.IO.File]::ReadAllText($typesFile) | ConvertFrom-Json
   foreach ($row in $t.items) {
-    $authoritative[$row.slug] = $row.type
-    $authoritativeAll[$row.slug] = @($row.types)
+    if ($row.type) { $authoritative[$row.slug] = Normalize-TypeLabel $row.type }
+    $authoritativeAll[$row.slug] = @($row.types | ForEach-Object { Normalize-TypeLabel $_ })
+    $authoritativeCategories[$row.slug] = @($row.categories)
+    $authoritativeIndustries[$row.slug] = @($row.industries)
   }
-  Write-Host "Authoritative types available for $($authoritative.Count) slugs"
+  Write-Host "Authoritative facets available for $($t.items.Count) slugs ($($authoritative.Count) with a type)"
 
-  # The listing is a second source of truth for what EXISTS, not just for types. A few
+  # The listing is a second source of truth for what EXISTS, not just for facets. A few
   # resources are published in the listing but absent from the sitemap, so indexing from the
   # sitemap alone quietly misses them. Add any such slug to the fetch set.
   $known = @{}
@@ -186,6 +210,16 @@ function Resolve-TypeFor($item, [string]$breadcrumbTitle, [string]$fullTitle, [s
   Resolve-Type $breadcrumbTitle $fullTitle $description
 }
 
+function Get-Facet($map, [string]$slug) {
+  if ($map.ContainsKey($slug)) { @($map[$slug]) } else { @() }
+}
+
+# Records already on disk predate these fields, so set-or-add rather than assuming either.
+function Set-Field($item, [string]$name, $value) {
+  if ($item.PSObject.Properties[$name]) { $item.$name = $value }
+  else { $item | Add-Member -NotePropertyName $name -NotePropertyValue $value }
+}
+
 function Get-Meta([string]$html, [string]$property) {
   $m = [regex]::Match($html, '<meta[^>]+(?:property|name)="' + [regex]::Escape($property) + '"[^>]+content="([^"]*)"')
   if ($m.Success) { return [System.Net.WebUtility]::HtmlDecode($m.Groups[1].Value) }
@@ -206,7 +240,9 @@ function Save-Progress {
     count      = $items.Count
     countByType = ($items | Group-Object type | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ type = $_.Name; count = $_.Count } })
     countByTypeSource = ($items | Group-Object typeSource | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ source = $_.Name; count = $_.Count } })
-    note       = 'title and description are the real values from each page. type is the site''s own content type where typeSource is "site", taken from the listing taxonomy; where typeSource is "inferred" it is a keyword guess from the breadcrumb, title or description, because that slug is absent from the listing. types lists every type the site assigns, since a resource can carry more than one.'
+    countByIndustry = ($items | ForEach-Object { $_.industries } | Group-Object | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ industry = $_.Name; count = $_.Count } })
+    countByCategory = ($items | ForEach-Object { $_.categories } | Group-Object | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ category = $_.Name; count = $_.Count } })
+    note       = 'title and description are the real values from each page. type is the site''s own content type where typeSource is "site", taken from the listing taxonomy; where typeSource is "inferred" it is a keyword guess from the breadcrumb, title or description, because that slug is absent from the listing. types, categories and industries are the site''s own taxonomy terms and are never inferred: an empty list means the site assigns none, which is not the same as the resource having no industry.'
     items      = $items
   }
   [System.IO.File]::WriteAllText($script:outFile, ($payload | ConvertTo-Json -Depth 5) + "`n")
@@ -220,12 +256,11 @@ if ($RetypeOnly) {
     $item = $done[$key]
     # fullTitle is the og:title; title is the breadcrumb where one existed.
     $item.type = Resolve-TypeFor $item $item.title $item.fullTitle $item.description
-    $all = if ($authoritativeAll.ContainsKey($item.slug)) { $authoritativeAll[$item.slug] } else { @() }
-    if ($item.PSObject.Properties['types']) { $item.types = $all }
-    else { $item | Add-Member -NotePropertyName types -NotePropertyValue $all }
     $src = if ($authoritative.ContainsKey($item.slug)) { 'site' } elseif ($item.type -eq 'Unknown') { 'none' } else { 'inferred' }
-    if ($item.PSObject.Properties['typeSource']) { $item.typeSource = $src }
-    else { $item | Add-Member -NotePropertyName typeSource -NotePropertyValue $src }
+    Set-Field $item 'types'      (Get-Facet $authoritativeAll        $item.slug)
+    Set-Field $item 'categories' (Get-Facet $authoritativeCategories $item.slug)
+    Set-Field $item 'industries' (Get-Facet $authoritativeIndustries $item.slug)
+    Set-Field $item 'typeSource' $src
   }
   Save-Progress
   Write-Host "Retyped $($done.Count) records without re-fetching."
@@ -270,7 +305,9 @@ foreach ($target in $pending) {
       title       = if ($breadcrumbTitle) { $breadcrumbTitle } else { $ogTitle }
       fullTitle   = $ogTitle
       type        = Resolve-TypeFor $target $breadcrumbTitle $ogTitle $description
-      types       = if ($authoritativeAll.ContainsKey($target.slug)) { $authoritativeAll[$target.slug] } else { @() }
+      types       = Get-Facet $authoritativeAll $target.slug
+      categories  = Get-Facet $authoritativeCategories $target.slug
+      industries  = Get-Facet $authoritativeIndustries $target.slug
       typeSource  = if ($authoritative.ContainsKey($target.slug)) { 'site' } else { 'inferred' }
       description = $description
       url         = $target.url
