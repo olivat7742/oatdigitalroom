@@ -7,7 +7,7 @@
  */
 
 import raw from '@catalog/demo-catalog.json'
-import type { Chapter, StageAsset, StageAssetType, WalkthroughStep } from '@/types/stageDirective'
+import type { AssetReference, Chapter, StageAsset, StageAssetType, WalkthroughStep } from '@/types/stageDirective'
 import { placeholderImage } from '@/placeholder'
 
 /**
@@ -56,6 +56,7 @@ export interface CatalogAsset {
   followUps?: string[]
   talkingPoints?: string[]
   keywords?: string[]
+  references?: AssetReference[]
   reviewedOn?: string
   reviewedBy?: string
 }
@@ -112,6 +113,7 @@ export function toStageAsset(id: string): StageAsset | null {
   if (entry.durationSeconds !== undefined) asset.durationSeconds = entry.durationSeconds
   if (entry.chapters?.length) asset.chapters = entry.chapters
   if (entry.steps?.length) asset.steps = entry.steps
+  if (entry.references?.length) asset.references = entry.references
 
   return asset
 }

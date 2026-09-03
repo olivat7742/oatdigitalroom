@@ -60,6 +60,8 @@ export interface StageAsset {
   durationSeconds?: number
   chapters?: Chapter[]
   steps?: WalkthroughStep[]
+  /** Public links for further reading, carried from the catalog. */
+  references?: AssetReference[]
 }
 
 export interface TourInfo {
@@ -74,6 +76,12 @@ export interface Cta {
   label: string
   value: string
   kind: CtaKind
+}
+
+/** A public link offered under an agent reply so the visitor can read more later. */
+export interface AssetReference {
+  label: string
+  url: string
 }
 
 export interface StageDirective {

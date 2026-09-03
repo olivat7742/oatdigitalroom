@@ -556,6 +556,70 @@ const YOUTUBE_META = {
   '3MJfI69Mhs0': { skip: true, reason: 'Kristen Bell brand advertising. Not a demonstration of anything.' },
 }
 
+/**
+ * Public reference links, keyed by the product names used in the catalog.
+ *
+ * Every URL here was checked to return 200 before being added. Two plausible-looking guesses
+ * (`/products/cxone-mpower-agent`, `/products/ai-customer-service-automation`) turned out to
+ * 404, which is why these are verified rather than constructed. A dead link under an agent
+ * reply is worse than no link: the visitor bookmarks it and finds nothing later.
+ *
+ * Re-verify with a HEAD sweep if NiCE reorganises the site.
+ */
+const PRODUCT_REFERENCES = {
+  'CXone Agent Copilot': { label: 'Copilot for Agents', url: 'https://www.nice.com/products/copilot-for-agents' },
+  'CXone Agent Workspace': { label: 'Workforce Empowerment', url: 'https://www.nice.com/products/workforce-empowerment' },
+  'CXone Supervisor Workspace': { label: 'Workforce Management', url: 'https://www.nice.com/products/workforce-management' },
+  'CXone Workforce Management': { label: 'Workforce Management', url: 'https://www.nice.com/products/workforce-management' },
+  'CXone Performance Management': { label: 'Performance Management', url: 'https://www.nice.com/products/performance-management' },
+  'CXone Quality Management': { label: 'Quality Management', url: 'https://www.nice.com/products/quality-management' },
+  'CXone Interaction Analytics': { label: 'Interaction Analytics', url: 'https://www.nice.com/products/interaction-analytics' },
+  'CXone Screen Intelligence': { label: 'Interaction Analytics', url: 'https://www.nice.com/products/interaction-analytics' },
+  'CXone Routing': { label: 'Omnichannel Routing', url: 'https://www.nice.com/products/omnichannel-routing' },
+  'CXone Digital': { label: 'Digital Customer Experience', url: 'https://www.nice.com/products/digital-customer-experience' },
+  'CXone Expert': { label: 'Knowledge Management', url: 'https://www.nice.com/products/knowledge-management' },
+  'CXone Mpower': { label: 'CXone', url: 'https://www.nice.com/products/cxone' },
+  'CXone': { label: 'CXone', url: 'https://www.nice.com/products/cxone' },
+  'NiCE Proactive Outreach': { label: 'Proactive Outbound Engagement', url: 'https://www.nice.com/products/proactive-outbound-engagement' },
+  SmartReach: { label: 'Proactive Outbound Engagement', url: 'https://www.nice.com/products/proactive-outbound-engagement' },
+  'NiCE Engagement Hub': { label: 'Engagement Orchestration', url: 'https://www.nice.com/products/engagement-orchestration' },
+  'Cognigy AI Agents': { label: 'AI Agents for Self-Service', url: 'https://www.nice.com/products/ai-agents-for-self-service' },
+  'NiCE Value Realization Services': { label: 'NiCE', url: 'https://www.nice.com' },
+}
+
+/** Appended to every asset, so a visitor always has somewhere to go for more detail. */
+const ALWAYS_REFERENCES = [
+  { label: 'NiCE product documentation', url: 'https://help.nice-incontact.com' },
+]
+
+/** Added when an asset involves Cognigy, since its developer docs live separately. */
+const COGNIGY_REFERENCE = { label: 'Cognigy documentation', url: 'https://docs.cognigy.com' }
+
+function referencesFor(products) {
+  const out = []
+  const seen = new Set()
+
+  for (const product of products ?? []) {
+    const ref = PRODUCT_REFERENCES[product]
+    if (ref && !seen.has(ref.url)) {
+      seen.add(ref.url)
+      out.push(ref)
+    }
+  }
+  if ((products ?? []).some((p) => p.toLowerCase().includes('cognigy')) && !seen.has(COGNIGY_REFERENCE.url)) {
+    seen.add(COGNIGY_REFERENCE.url)
+    out.push(COGNIGY_REFERENCE)
+  }
+  for (const ref of ALWAYS_REFERENCES) {
+    if (!seen.has(ref.url)) {
+      seen.add(ref.url)
+      out.push(ref)
+    }
+  }
+  // Three is enough to be useful without turning every reply into a link farm.
+  return out.slice(0, 3)
+}
+
 const MIME_EXT = new Set(['.mp4', '.mov', '.m4v', '.webm'])
 
 function readExisting() {
@@ -649,6 +713,7 @@ for (const name of files) {
         ? { talkingPoints: meta.talkingPoints }
         : {}),
     keywords: meta.keywords,
+    references: prior.references?.length ? prior.references : referencesFor(meta.products),
     ...(prior.reviewedOn ? { reviewedOn: prior.reviewedOn } : {}),
     ...(prior.reviewedBy ? { reviewedBy: prior.reviewedBy } : {}),
     // Carried through so tooling can see file weight without stat-ing the disk.
@@ -716,6 +781,7 @@ if (youtube?.videos?.length) {
       ...(prior.followUps?.length ? { followUps: prior.followUps } : {}),
       ...(prior.talkingPoints?.length ? { talkingPoints: prior.talkingPoints } : {}),
       keywords: meta.keywords,
+      references: prior.references?.length ? prior.references : referencesFor(meta.products),
       reviewedOn: (youtube.videos[0]?.published ?? '').slice(0, 10) || '2026-08-31',
       reviewedBy: 'Published publicly by NiCE on its official YouTube channel',
     })

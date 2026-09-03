@@ -142,6 +142,20 @@
           "items": { "type": "string" },
           "description": "Synonyms and competitor or legacy terms a visitor might use, to improve recall."
         },
+        "references": {
+          "type": "array",
+          "description": "Public links offered under the agent's reply so a visitor can bookmark something and read more later. Generated from the asset's products by tools/build-catalog.mjs. Every URL must be verified to resolve: a dead link under an agent reply is worse than no link, because the visitor only discovers it is dead after bookmarking it.",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        },
         "reviewedOn": { "type": "string", "format": "date" },
         "reviewedBy": { "type": "string" }
       }

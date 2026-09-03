@@ -37,6 +37,16 @@
         "services",
         "time to value"
       ],
+      "references": [
+        {
+          "label": "NiCE",
+          "url": "https://www.nice.com"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 5.5
     },
     {
@@ -71,6 +81,16 @@
         "collaborating",
         "agent assist",
         "human in the loop"
+      ],
+      "references": [
+        {
+          "label": "Copilot for Agents",
+          "url": "https://www.nice.com/products/copilot-for-agents"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 228.8
     },
@@ -107,6 +127,20 @@
         "end to end",
         "strategy",
         "consolidation"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 26.9
     },
@@ -147,6 +181,20 @@
         "tooling",
         "lifecycle",
         "how to build"
+      ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 89.7
     },
@@ -193,6 +241,20 @@
         "authentication",
         "regulated"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 239.6
     },
     {
@@ -231,6 +293,20 @@
         "appointment",
         "provider",
         "payer"
+      ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 256.7
     },
@@ -273,6 +349,20 @@
         "returns",
         "ecommerce",
         "commerce"
+      ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 34.7
     },
@@ -317,6 +407,20 @@
         "outage",
         "broadband"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 249.4
     },
     {
@@ -360,6 +464,20 @@
         "rebooking",
         "journey"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 248.8
     },
     {
@@ -397,6 +515,20 @@
         "query",
         "reporting",
         "natural language"
+      ],
+      "references": [
+        {
+          "label": "Interaction Analytics",
+          "url": "https://www.nice.com/products/interaction-analytics"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 232.2
     },
@@ -437,6 +569,16 @@
         "staffing",
         "shifts"
       ],
+      "references": [
+        {
+          "label": "Workforce Management",
+          "url": "https://www.nice.com/products/workforce-management"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 21.6
     },
     {
@@ -472,6 +614,16 @@
         "one screen",
         "consolidation",
         "swivel chair"
+      ],
+      "references": [
+        {
+          "label": "Workforce Empowerment",
+          "url": "https://www.nice.com/products/workforce-empowerment"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 22.6
     },
@@ -512,6 +664,20 @@
         "queue",
         "escalation"
       ],
+      "references": [
+        {
+          "label": "Omnichannel Routing",
+          "url": "https://www.nice.com/products/omnichannel-routing"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 27.4
     },
     {
@@ -550,6 +716,20 @@
         "automation",
         "reporting"
       ],
+      "references": [
+        {
+          "label": "Interaction Analytics",
+          "url": "https://www.nice.com/products/interaction-analytics"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 229.9
     },
     {
@@ -587,6 +767,16 @@
         "oversight",
         "bot management"
       ],
+      "references": [
+        {
+          "label": "Workforce Management",
+          "url": "https://www.nice.com/products/workforce-management"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 146.7
     },
     {
@@ -621,6 +811,16 @@
         "integration",
         "interactions",
         "architecture"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 18.6
     },
@@ -660,6 +860,20 @@
         "productivity",
         "management"
       ],
+      "references": [
+        {
+          "label": "Workforce Management",
+          "url": "https://www.nice.com/products/workforce-management"
+        },
+        {
+          "label": "Performance Management",
+          "url": "https://www.nice.com/products/performance-management"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 106.7
     },
     {
@@ -698,6 +912,20 @@
         "sms",
         "whatsapp",
         "channel switch"
+      ],
+      "references": [
+        {
+          "label": "Digital Customer Experience",
+          "url": "https://www.nice.com/products/digital-customer-experience"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 239.3
     },
@@ -790,6 +1018,20 @@
         "agent workspace",
         "during a call"
       ],
+      "references": [
+        {
+          "label": "Copilot for Agents",
+          "url": "https://www.nice.com/products/copilot-for-agents"
+        },
+        {
+          "label": "Workforce Empowerment",
+          "url": "https://www.nice.com/products/workforce-empowerment"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 134.5
     },
     {
@@ -877,6 +1119,16 @@
         "day in the life",
         "trends"
       ],
+      "references": [
+        {
+          "label": "Performance Management",
+          "url": "https://www.nice.com/products/performance-management"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 59.3
     },
     {
@@ -913,6 +1165,20 @@
         "workflow",
         "process",
         "end to end"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 343.3
     },
@@ -1018,6 +1284,20 @@
         "cognigy",
         "outbound voice bot"
       ],
+      "references": [
+        {
+          "label": "Proactive Outbound Engagement",
+          "url": "https://www.nice.com/products/proactive-outbound-engagement"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 339.1
     },
     {
@@ -1058,6 +1338,20 @@
         "sampling",
         "calibration"
       ],
+      "references": [
+        {
+          "label": "Quality Management",
+          "url": "https://www.nice.com/products/quality-management"
+        },
+        {
+          "label": "Interaction Analytics",
+          "url": "https://www.nice.com/products/interaction-analytics"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 100.6
     },
     {
@@ -1095,6 +1389,20 @@
         "notification",
         "deflection"
       ],
+      "references": [
+        {
+          "label": "Proactive Outbound Engagement",
+          "url": "https://www.nice.com/products/proactive-outbound-engagement"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 109.6
     },
     {
@@ -1131,6 +1439,16 @@
         "process discovery",
         "signals",
         "automation opportunity"
+      ],
+      "references": [
+        {
+          "label": "Interaction Analytics",
+          "url": "https://www.nice.com/products/interaction-analytics"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 100.6
     },
@@ -1220,6 +1538,16 @@
         "sentiment",
         "escalation"
       ],
+      "references": [
+        {
+          "label": "Workforce Management",
+          "url": "https://www.nice.com/products/workforce-management"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "sizeMB": 24.5
     },
     {
@@ -1256,6 +1584,16 @@
         "ai-first",
         "platform",
         "layer"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 28.2
     },
@@ -1299,6 +1637,20 @@
         "enterprise",
         "platform"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "sizeMB": 213.2
     },
     {
@@ -1336,6 +1688,16 @@
         "campaign",
         "sales",
         "collections"
+      ],
+      "references": [
+        {
+          "label": "Proactive Outbound Engagement",
+          "url": "https://www.nice.com/products/proactive-outbound-engagement"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "sizeMB": 142.9
     },
@@ -1376,6 +1738,20 @@
         "expert",
         "articles",
         "hallucination"
+      ],
+      "references": [
+        {
+          "label": "Knowledge Management",
+          "url": "https://www.nice.com/products/knowledge-management"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 21.4
     },
@@ -1418,6 +1794,20 @@
         "cisco",
         "migration",
         "rip and replace"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
       ],
       "sizeMB": 38.3
     },
@@ -1462,6 +1852,16 @@
         "proof",
         "who uses"
       ],
+      "references": [
+        {
+          "label": "Engagement Orchestration",
+          "url": "https://www.nice.com/products/engagement-orchestration"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     },
@@ -1501,6 +1901,16 @@
         "vision",
         "why now",
         "market"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
@@ -1551,6 +1961,16 @@
         "proof",
         "results"
       ],
+      "references": [
+        {
+          "label": "Copilot for Agents",
+          "url": "https://www.nice.com/products/copilot-for-agents"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     },
@@ -1600,6 +2020,20 @@
         "proof",
         "who uses"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     },
@@ -1638,6 +2072,20 @@
         "scaling",
         "scale",
         "vision"
+      ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
@@ -1678,6 +2126,20 @@
         "overview",
         "introduction"
       ],
+      "references": [
+        {
+          "label": "AI Agents for Self-Service",
+          "url": "https://www.nice.com/products/ai-agents-for-self-service"
+        },
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "Cognigy documentation",
+          "url": "https://docs.cognigy.com"
+        }
+      ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     },
@@ -1717,6 +2179,16 @@
         "point solutions",
         "silos"
       ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
+      ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"
     },
@@ -1753,6 +2225,16 @@
         "human and ai",
         "unified",
         "workforce"
+      ],
+      "references": [
+        {
+          "label": "CXone",
+          "url": "https://www.nice.com/products/cxone"
+        },
+        {
+          "label": "NiCE product documentation",
+          "url": "https://help.nice-incontact.com"
+        }
       ],
       "reviewedOn": "2026-08-27",
       "reviewedBy": "Published publicly by NiCE on its official YouTube channel"

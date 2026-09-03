@@ -1,14 +1,43 @@
 import { create } from 'zustand'
-import { extractDirective, type Cta, type StageAsset, type StageDirective, type TourInfo } from '@/types/stageDirective'
+import {
+  extractDirective,
+  type AssetReference,
+  type Cta,
+  type StageAsset,
+  type StageDirective,
+  type TourInfo,
+} from '@/types/stageDirective'
 import type { ConnectionState, InboundMessage, Transport } from '@/transport/types'
+import { DEFAULT_REFERENCES } from '@/references'
 
 export type MessageRole = 'agent' | 'visitor' | 'narration' | 'system'
+
+/**
+ * A citation attached to an agent reply so the visitor can bookmark it and come back later.
+ *
+ * `url` is only ever a genuinely public address. Local assets are served from the dev media
+ * route, which is meaningless to anyone else, so they get `url: null` and the rail says so
+ * rather than offering a link that dies the moment it is bookmarked.
+ */
+export interface MessageSource {
+  title: string
+  url: string | null
+  durationSeconds?: number
+}
 
 export interface Message {
   id: string
   role: MessageRole
   text: string
   at: number
+  /** The asset this reply put on the stage, if any. */
+  source?: MessageSource
+  /**
+   * Further reading. Present on every agent reply, including the ones that deliberately give
+   * the visitor nothing else, such as a pricing refusal or "there is no demo of that". Those
+   * are exactly the moments when somewhere else to look is most valuable.
+   */
+  references?: AssetReference[]
 }
 
 export interface StageState {
@@ -140,7 +169,30 @@ export const useSessionStore = create<SessionState>((set, get) => {
       const next: Partial<SessionState> = {}
 
       if (inbound.text) {
-        next.messages = [...state.messages, message('agent', inbound.text)]
+        const agentMessage = message('agent', inbound.text)
+
+        // Cite whatever the agent just put on the stage, on the reply that introduced it. The
+        // stage only ever shows the current asset, so without this the visitor loses the
+        // reference as soon as the conversation moves on.
+        const shownAsset = directive?.asset
+        if (shownAsset && (directive?.action === 'show' || directive?.action === 'play')) {
+          agentMessage.source = {
+            title: shownAsset.title ?? shownAsset.id,
+            url: shownAsset.watchUrl ?? null,
+            ...(shownAsset.durationSeconds !== undefined
+              ? { durationSeconds: shownAsset.durationSeconds }
+              : {}),
+          }
+        }
+
+        // Every agent reply carries further reading. Prefer the shown asset's own references,
+        // which are product-specific, and fall back to the general ones so a reply that shows
+        // nothing still leaves the visitor somewhere to go.
+        agentMessage.references = shownAsset?.references?.length
+          ? shownAsset.references
+          : DEFAULT_REFERENCES
+
+        next.messages = [...state.messages, agentMessage]
       }
 
       if (directive) {
