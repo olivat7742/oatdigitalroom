@@ -1,5 +1,5 @@
 {
-  "notes": "Curated documents from nice.com/resources, promoted into the demo catalog as showable assets. Title, summary, content type and industries are NOT here: they are pulled from catalog/nice-resources-enriched.json at build time, so they stay the site's own words rather than a copy that silently goes stale. What lives here is the judgement that cannot be derived: which of the 1,414 resources are worth showing, and the products, personas, depth and keywords that make them retrievable. Read by tools/build-catalog.mjs and tools/fetch-document-thumbnails.ps1. products must be a key of PRODUCT_REFERENCES in build-catalog.mjs, otherwise the asset gets no product reference under the reply.",
+  "notes": "KEYWORDS ARE THE ONLY LEVER THAT WORKS ON BOTH ENGINES. The portal's searchCatalog and the Cognigy find_demo tool score differently, and find_demo's code cannot be read or edited through the MCP connector, so a scoring fix cannot be applied there. Keywords are read as an identifying field by both, which makes them the portable way to correct a bad live answer: 'how does a retailer modernise its contact center?' returned the Student Loans COMPANY case study live, because that word is in its title, so retailer and modernise were added to the Lands' End entry instead of touching either matcher. Curated documents from nice.com/resources, promoted into the demo catalog as showable assets. Title, summary, content type and industries are NOT here: they are pulled from catalog/nice-resources-enriched.json at build time, so they stay the site's own words rather than a copy that silently goes stale. What lives here is the judgement that cannot be derived: which of the 1,414 resources are worth showing, and the products, personas, depth and keywords that make them retrievable. Read by tools/build-catalog.mjs and tools/fetch-document-thumbnails.ps1. products must be a key of PRODUCT_REFERENCES in build-catalog.mjs, otherwise the asset gets no product reference under the reply.",
   "documents": [
     {
       "slug": "corpay-powers-faster-smarter-travel-support-with-ai-analytics-driven-resolution",
@@ -39,7 +39,10 @@
       "personas": ["cx-leader", "it-architect"],
       "depth": "overview",
       "useCases": ["contact center modernisation", "cloud migration", "retail service"],
-      "keywords": ["lands end", "retail", "ecommerce", "modernization", "migration", "legacy"]
+      "keywords": [
+        "lands end", "retail", "ecommerce", "modernization", "migration", "legacy",
+        "retailer", "modernise", "modernisation"
+      ]
     },
     {
       "slug": "moxie-pest-control-cuts-costs-and-boosts-service-with-ai-powered-nice-cxone",
