@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://nice.internal/digital-room/visitor-payload.schema.json",
+  "title": "Digital Room visitor payload",
+  "description": "Attached by the Cognigy agent to a message as data._visitor, whenever it learns or updates who the visitor is. Deliberately a SIBLING of data._showroom rather than part of the stage directive: it says nothing about what is on the stage, and folding a non-stage concern into that contract would blur what the Stage is allowed to know.\n\nThe portal uses it to personalise the chrome, currently the company logo in the header. It is not required for any stage behaviour, and a client that ignores it must still work correctly.",
+  "type": "object",
+  "required": ["_visitor"],
+  "properties": {
+    "_visitor": {
+      "type": "object",
+      "required": ["v"],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "const": 1,
+          "description": "Contract version. Ignore an unrecognised version rather than guessing."
+        },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "company": {
+          "type": "string",
+          "description": "As the visitor said it. Display only. NEVER use this to guess a domain or a logo: company names are ambiguous internationally, and a wrong guess puts a stranger's logo in a NiCE sales tool."
+        },
+        "jobTitle": { "type": "string" },
+        "email": {
+          "type": "string",
+          "description": "The authoritative company identifier is this address's domain, which is why no separate question is needed in the normal case."
+        },
+        "website": {
+          "type": "string",
+          "description": "Asked only when the email is a personal provider such as gmail, which identifies no employer. Takes precedence over the email domain when present, being the more deliberate signal."
+        },
+        "department": { "type": "string" },
+        "interest": { "type": "string" },
+        "introductionComplete": {
+          "type": "boolean",
+          "description": "True once all five introduction questions are answered."
+        }
+      }
+    }
+  }
+}

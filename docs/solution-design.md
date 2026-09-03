@@ -122,6 +122,31 @@ to interrogate before giving value. Five opening questions is deliberately the o
 fewer visitors, better qualified. Worth revisiting if drop-off at the introduction turns out
 to be high, which the Phase 4 telemetry will show.
 
+### Identifying the company, and its logo
+
+Once identified, the visitor's company logo appears in the middle of the header, with the NiCE
+wordmark staying top left.
+
+**The company name is never used to find the logo.** Names are ambiguous internationally:
+"Orange", "Apex Logistics" and "Banque Lyonnaise" could be any of several organisations, and a
+wrong guess would put a stranger's logo in a NiCE sales tool. The **email domain** is
+authoritative, and it is already collected, so no extra question is needed in the normal case.
+
+The exception is a personal email provider. `tom.baker@gmail.com` identifies no employer, and
+without a blocklist the visitor would be shown Gmail's logo as their own. When the tool detects
+one of about forty personal providers it adds a sixth question asking for the company website,
+which then takes precedence. That is the only case where the introduction exceeds five
+questions.
+
+Logos come from DuckDuckGo's icon service, with Google's favicon service as a fallback. Both
+were checked to return a genuine 404 for an unknown domain, so the `onError` fallback chain is
+reliable rather than a guess; a service that answered 200 with a generic globe would put a
+placeholder in the header looking like a real logo. If neither has the domain, the company name
+is shown as text. Clearbit's logo API is deliberately not used: it is dead since the HubSpot
+acquisition.
+
+Worth knowing: whichever icon service is used learns which company domain was looked up.
+
 ### Where the identity goes
 
 `OAT_DIGITAL_ROOM_save_visitor_profile` writes to the **Cognigy contact profile**, with

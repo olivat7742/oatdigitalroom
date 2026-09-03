@@ -76,6 +76,21 @@ Validate the catalog after any edit:
 node tools/validate-catalog.mjs
 ```
 
+## Header personalisation
+
+Once the agent identifies the visitor, their company logo appears in the middle of the header.
+The NiCE wordmark stays top left and the header height never changes: the logo is capped at
+26px tall and 150px wide with `object-fit: contain`, so a wide wordmark scales down rather than
+stretching the row.
+
+The logo is resolved from the **email domain**, never the company name. `app/src/company.ts`
+explains why, and carries the personal-provider blocklist that stops a Gmail user being shown
+Gmail's logo as their employer's.
+
+The identity reaches the client as `data._visitor`, a deliberate **sibling** of `_showroom`
+rather than part of it: it says nothing about what is on the stage, and the Stage has no
+business knowing who is watching. Contract: `../contracts/visitor-payload.schema.json`.
+
 ## Citations and further reading
 
 Every agent reply carries somewhere to go for more detail, in three layers:

@@ -9,6 +9,7 @@ import {
 } from '@/types/stageDirective'
 import type { ConnectionState, InboundMessage, Transport } from '@/transport/types'
 import { DEFAULT_REFERENCES } from '@/references'
+import { extractVisitor, type Visitor } from '@/types/visitor'
 
 export type MessageRole = 'agent' | 'visitor' | 'narration' | 'system'
 
@@ -57,6 +58,8 @@ interface SessionState {
   tour: TourInfo | null
   connection: ConnectionState
   agentTyping: boolean
+  /** Who the agent has established the visitor is. Drives the header chrome only. */
+  visitor: Visitor | null
   /** Chapter indices already narrated, so a rewind does not repeat the talk track. */
   narratedChapters: Set<string>
 
@@ -164,9 +167,16 @@ export const useSessionStore = create<SessionState>((set, get) => {
 
   function handleInbound(inbound: InboundMessage): void {
     const directive = extractDirective(inbound.data)
+    const visitorUpdate = extractVisitor(inbound.data)
 
     set((state) => {
       const next: Partial<SessionState> = {}
+
+      // Merged, not replaced: the agent sends only what it just learned, so replacing would
+      // drop everything established in earlier turns.
+      if (visitorUpdate) {
+        next.visitor = { ...(state.visitor ?? {}), ...visitorUpdate }
+      }
 
       if (inbound.text) {
         const agentMessage = message('agent', inbound.text)
@@ -239,6 +249,7 @@ export const useSessionStore = create<SessionState>((set, get) => {
     tour: null,
     connection: 'idle',
     agentTyping: false,
+    visitor: null,
     narratedChapters: new Set<string>(),
 
     attachTransport(next: Transport) {

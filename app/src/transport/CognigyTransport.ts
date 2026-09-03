@@ -54,14 +54,32 @@ function resolveAssetRef(data: unknown): unknown {
   return { ...data, _showroom: { ...rest, v: STAGE_DIRECTIVE_VERSION, asset } }
 }
 
-/** Picks the stage directive out of a turn, preferring the top level then the output stack. */
-function findDirectivePayload(response: CognigyResponse): unknown {
-  if (isRecord(response.data) && isRecord(response.data['_showroom'])) return response.data
+/**
+ * Collects every payload the agent emitted this turn, across the whole output stack.
+ *
+ * One turn can carry more than one: a stage directive from show_demo and a visitor payload
+ * from save_visitor_profile arrive as separate data-only outputs. An earlier version returned
+ * the first `_showroom` it found and discarded everything else, which silently dropped the
+ * visitor payload and left the header unpersonalised with no error anywhere.
+ *
+ * The REST response's top-level `data` only retains one payload, so the stack has to be
+ * scanned rather than trusted to summarise itself.
+ */
+function collectPayloads(response: CognigyResponse): Record<string, unknown> | undefined {
+  const KEYS = ['_showroom', '_visitor'] as const
+  const merged: Record<string, unknown> = {}
 
-  for (const output of response.outputStack ?? []) {
-    if (isRecord(output.data) && isRecord(output.data['_showroom'])) return output.data
+  const sources: unknown[] = [response.data, ...(response.outputStack ?? []).map((o) => o.data)]
+
+  for (const source of sources) {
+    if (!isRecord(source)) continue
+    for (const key of KEYS) {
+      // Later outputs win, so the newest state in the turn is the one applied.
+      if (isRecord(source[key])) merged[key] = source[key]
+    }
   }
-  return undefined
+
+  return Object.keys(merged).length > 0 ? merged : undefined
 }
 
 export class CognigyTransport implements Transport {
@@ -127,14 +145,14 @@ export class CognigyTransport implements Transport {
       if (opts.markOpen) this.connectionHandler?.('open')
       this.typingHandler?.(false)
 
-      const directivePayload = findDirectivePayload(payload)
+      const payloads = collectPayloads(payload)
       const spoken = typeof payload.text === 'string' ? payload.text.trim() : ''
 
-      // One inbound message carrying both halves of the turn, which is what the store
-      // expects: text for the rail, data for the stage.
+      // One inbound message carrying every part of the turn: text for the rail, _showroom for
+      // the stage, _visitor for the header chrome.
       const inbound: InboundMessage = {}
       if (spoken) inbound.text = spoken
-      if (directivePayload) inbound.data = resolveAssetRef(directivePayload)
+      if (payloads) inbound.data = resolveAssetRef(payloads)
 
       if (inbound.text || inbound.data) {
         this.messageHandler?.(inbound)

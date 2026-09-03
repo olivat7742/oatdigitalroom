@@ -130,18 +130,39 @@ export class MockTransport implements Transport {
   private advanceOnboarding(answer: string): ScriptedStep[] {
     const step = ONBOARDING[this.onboardingStep]
     if (step) {
-      // The whole answer goes against every field the step covers. Crude, and honest about it:
-      // there is no model here to split "Acme, Head of Ops" into two fields.
-      for (const field of step.fields) this.visitor[field] = answer.trim()
+      const value = answer.trim()
+      if (step.fields.length === 2) {
+        // Split on the first comma, or on whitespace for a name. Crude on purpose: there is no
+        // model here. It exists only so the header shows "Banque Lyonnaise" rather than
+        // "Banque Lyonnaise, Head of Service Delivery". The live agent does this properly.
+        const separator = value.includes(',') ? ',' : ' '
+        const cut = value.indexOf(separator)
+        const first = cut === -1 ? value : value.slice(0, cut).trim()
+        const rest = cut === -1 ? '' : value.slice(cut + 1).trim()
+        this.visitor[step.fields[0] as string] = first
+        if (rest) this.visitor[step.fields[1] as string] = rest
+      } else {
+        for (const field of step.fields) this.visitor[field] = value
+      }
     }
     this.onboardingStep += 1
 
     const next = ONBOARDING[this.onboardingStep]
     if (next) {
-      return [{ delayMs: 550, message: { text: next.question } }]
+      return [{ delayMs: 550, message: { text: next.question, data: this.visitorPayload(false) } }]
     }
 
     return this.introductionComplete()
+  }
+
+  /**
+   * Mirrors what the Cognigy save_visitor_profile tool emits, so the header personalises the
+   * same way here as it does against the live agent.
+   *
+   * Contract: contracts/visitor-payload.schema.json
+   */
+  private visitorPayload(introductionComplete: boolean): Record<string, unknown> {
+    return { _visitor: { v: 1, ...this.visitor, introductionComplete } }
   }
 
   /** Closes the introduction with suggestions drawn from the catalog, using their own words. */
@@ -162,6 +183,7 @@ export class MockTransport implements Transport {
         message: {
           text: `${lead} Based on that, here is what I would start with:\n\n${lines.join('\n')}\n\nPick one, or ask me anything else.`,
           data: {
+            ...this.visitorPayload(true),
             _showroom: {
               v: 1,
               action: 'clear',

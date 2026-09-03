@@ -10,6 +10,7 @@ import { MockTransport } from '@/transport/MockTransport'
 import { CognigyTransport } from '@/transport/CognigyTransport'
 import { Stage } from '@/components/stage/Stage'
 import { ChatRail } from '@/components/chat/ChatRail'
+import { CompanyBadge } from '@/components/CompanyBadge'
 import { brand } from '@/theme'
 
 /** Set VITE_TRANSPORT=cognigy in app/.env.local to talk to the real agent. */
@@ -74,32 +75,45 @@ export function App() {
         gap: { xs: 1.5, md: 2 },
       }}
     >
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={2}
-        sx={{ flexShrink: 0 }}
+      {/* Three fixed columns rather than space-between, so the company badge sits in the true
+          centre and does not drift as the chip on the right changes width. Row height is set by
+          the wordmark, and CompanyBadge caps its logo below that, so the header cannot grow
+          when a logo loads. */}
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
+          alignItems: 'center',
+          gap: 2,
+        }}
       >
         <Wordmark />
-        {/* The banner must never let someone mistake unreviewed content for approved
-            material, so it stays visible in live mode too. */}
-        <Chip
-          size="small"
-          label={
-            USE_LIVE_AGENT
-              ? 'Live Cognigy agent, content not yet approved'
-              : 'Mock mode, fixture data, not approved content'
-          }
-          sx={{
-            bgcolor: 'transparent',
-            border: '1px solid',
-            borderColor: brand.pink,
-            color: brand.pinkDark,
-            fontWeight: 400,
-          }}
-        />
-      </Stack>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+          <CompanyBadge />
+        </Box>
+
+        <Stack direction="row" justifyContent="flex-end" sx={{ minWidth: 0 }}>
+          {/* The banner must never let someone mistake unreviewed content for approved
+              material, so it stays visible in live mode too. */}
+          <Chip
+            size="small"
+            label={
+              USE_LIVE_AGENT
+                ? 'Live Cognigy agent, content not yet approved'
+                : 'Mock mode, fixture data, not approved content'
+            }
+            sx={{
+              bgcolor: 'transparent',
+              border: '1px solid',
+              borderColor: brand.pink,
+              color: brand.pinkDark,
+              fontWeight: 400,
+            }}
+          />
+        </Stack>
+      </Box>
 
       <Box
         sx={{
