@@ -5,11 +5,14 @@ import { hasRealSource, type StageAsset } from '@/types/stageDirective'
 import { brand } from '@/theme'
 
 /**
- * Renderer for diagram, comparison and document assets.
+ * Renderer for diagram and comparison assets.
  *
- * These three share a shape in the contract: a resolved src that is displayed as-is. They
- * are kept in one component rather than three near-identical ones, and will only be split
- * if their contracts genuinely diverge.
+ * Both share a shape in the contract: a resolved src that is an image and is displayed as-is.
+ * Kept in one component rather than two near-identical ones, and will only be split if their
+ * contracts genuinely diverge.
+ *
+ * Documents used to render here too, which was wrong: their src is a web page, not an image,
+ * so it produced a broken frame. They have their own renderer in DocumentAsset.
  */
 export function StaticAsset({ asset }: { asset: StageAsset }) {
   if (!hasRealSource(asset)) {

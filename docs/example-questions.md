@@ -1,7 +1,14 @@
 # Example questions
 
-Covers all 31 catalogued assets. Use it to demo the Digital Room, or as the starting point for
-the Phase 1 selection check.
+Covers all 66 catalogued assets: 31 local videos, 8 YouTube embeds and 27 documents from
+nice.com/resources. Use it to demo the Digital Room, or as the starting point for the Phase 1
+selection check.
+
+The document questions in [Documents, not videos](#documents-not-videos) are checked
+automatically by `node tools/test-retrieval.mjs`, which asserts the exact asset each one
+returns. Retrieval is the part of this project most likely to regress silently: adding assets
+re-ranks questions that used to work and nothing complains. Adding the documents moved several
+video answers on the first run, which is why that check exists.
 
 ## Read this first
 
@@ -70,6 +77,72 @@ forty seconds to the relevant screen beats minute zero of a thirty-minute sessio
 | "Show me live monitoring of a conversation" | 1:02 |
 | "Show me the queue and SLA view" | 1:20 |
 | "Jump straight to the reskilling recommendations" | 1:36 |
+
+---
+
+## Documents, not videos
+
+The Digital Room does not only play video. Ask for something to **read** and the stage shows a
+document card instead: NiCE's own cover image, its own description, its content type and
+industry as badges, and a button that opens the resource on nice.com in a new tab.
+
+These are proposed rather than embedded. The pages could technically be iframed, since they set
+neither `X-Frame-Options` nor a CSP frame-ancestors policy, and doing so would be worse: the
+visitor would get NiCE's site navigation, cookie banner and footer inside a 60% pane, and any
+gated download form would be unusable at that width.
+
+Every row below is asserted by `tools/test-retrieval.mjs`, so if one stops returning what it
+says here, the check fails.
+
+### Customer proof, by industry
+
+| Ask | Shows |
+|---|---|
+| "Do you have a case study for a healthcare organisation?" | Case Study: Optum |
+| "Any proof from an insurance company?" | Bamboo Insurance, tech trailblazer to CX leader |
+| "How does a retailer modernise its contact center?" | Case Study: Lands' End |
+| "Any case study from a bank or mortgage lender?" | Case Study: Freedom Mortgage |
+| "Show me a telecom workforce management case study" | Case Study: EE |
+| "Is there a case study from the railways or transport sector?" | Case Study: Dutch Railways |
+| "Which BPO improved quality management?" | HGS, quality management with NiCE Quality Central |
+| "Show me a utilities customer using agentic AI" | Helen, agentic AI as the front door |
+
+### Datasheets and compliance
+
+| Ask | Shows |
+|---|---|
+| "Is CXone FedRAMP authorised for government use?" | CXone FedRAMP for Government (datasheet) |
+| "Do you have an IVR datasheet?" | NiCE Interactive Voice Response |
+| "Do you have a datasheet on employee engagement and shift flexibility?" | NiCE Employee Engagement Manager |
+
+### Analyst and research
+
+| Ask | Shows |
+|---|---|
+| "What do analysts say about NiCE for CCaaS?" | Everest Group Global CCaaS PEAK Matrix 2026 |
+| "Is there research on CX technology trends for 2026?" | State of CX Tech 2026 |
+
+### Reading material
+
+| Ask | Shows |
+|---|---|
+| "Do you have a white paper on outbound compliance?" | Rapid results with compliance-first outbound |
+| "Do you have an infographic about agent copilot?" | Give your employees the CX AI copilot they deserve |
+| "Show me an analytics infographic" | AI-Guided Analytics |
+| "Can I read an ebook on CX AI maturity?" | CX AI Maturity Assessment and Guidebook |
+| "Do you have anything for higher education enrollment?" | From enrollment cliff to lifelong loyalty |
+
+### What is and is not curated
+
+27 of the 1,414 English resources on nice.com are promoted into the catalog. The other 1,387
+are indexed in [../catalog/nice-resources-enriched.json](../catalog/nice-resources-enriched.json)
+but are not retrievable, because being findable requires products, personas, depth and keywords
+that no crawl can derive. To add one, put its slug in
+[../catalog/document-curation.json](../catalog/document-curation.json), run
+`tools/fetch-document-thumbnails.ps1`, then `node tools/build-catalog.mjs`.
+
+Titles, descriptions, content types and industries are never authored here: they come from
+NiCE's own pages and taxonomy, so they stay NiCE's words and update when the site does.
 
 ---
 

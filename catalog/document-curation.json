@@ -1,0 +1,221 @@
+{
+  "notes": "Curated documents from nice.com/resources, promoted into the demo catalog as showable assets. Title, summary, content type and industries are NOT here: they are pulled from catalog/nice-resources-enriched.json at build time, so they stay the site's own words rather than a copy that silently goes stale. What lives here is the judgement that cannot be derived: which of the 1,414 resources are worth showing, and the products, personas, depth and keywords that make them retrievable. Read by tools/build-catalog.mjs and tools/fetch-document-thumbnails.ps1. products must be a key of PRODUCT_REFERENCES in build-catalog.mjs, otherwise the asset gets no product reference under the reply.",
+  "documents": [
+    {
+      "slug": "corpay-powers-faster-smarter-travel-support-with-ai-analytics-driven-resolution",
+      "products": ["CXone Interaction Analytics"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["analytics-driven resolution", "travel support", "first contact resolution"],
+      "keywords": ["corpay", "financial services", "payments", "analytics", "resolution", "travel"]
+    },
+    {
+      "slug": "freedom-mortgage-case-study",
+      "products": ["CXone Workforce Management"],
+      "personas": ["contact-center-ops", "agent-supervisor"],
+      "depth": "overview",
+      "useCases": ["workforce management", "forecasting", "mortgage servicing"],
+      "keywords": ["freedom mortgage", "banking", "financial services", "lending", "wfm", "scheduling"]
+    },
+    {
+      "slug": "from-fragmented-journeys-to-connected-care",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["patient journey", "care coordination", "journey orchestration"],
+      "keywords": ["healthcare", "patient", "care", "payer", "provider", "fragmented", "connected care"]
+    },
+    {
+      "slug": "optum-case-study",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["patient experience", "healthcare contact center"],
+      "keywords": ["optum", "healthcare", "payer", "insurance", "patient", "member experience"]
+    },
+    {
+      "slug": "lands-end-refreshes-operations-with-long-awaited-contact-center-modernization",
+      "products": ["CXone"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["contact center modernisation", "cloud migration", "retail service"],
+      "keywords": ["lands end", "retail", "ecommerce", "modernization", "migration", "legacy"]
+    },
+    {
+      "slug": "moxie-pest-control-cuts-costs-and-boosts-service-with-ai-powered-nice-cxone",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "procurement"],
+      "depth": "overview",
+      "useCases": ["cost reduction", "field service", "AI automation"],
+      "keywords": ["moxie", "pest control", "retail", "field service", "cost savings", "roi"]
+    },
+    {
+      "slug": "cxone-fedramp-for-government",
+      "products": ["CXone"],
+      "personas": ["it-architect", "procurement"],
+      "depth": "technical",
+      "useCases": ["public sector compliance", "FedRAMP authorisation", "security accreditation"],
+      "keywords": ["fedramp", "government", "public sector", "compliance", "security", "authorization", "federal"]
+    },
+    {
+      "slug": "student-loans-company-turned-its-scheduling-team-into-its-workforce-development-engine",
+      "products": ["CXone Workforce Management"],
+      "personas": ["contact-center-ops", "agent-supervisor"],
+      "depth": "overview",
+      "useCases": ["scheduling", "workforce development", "public sector operations"],
+      "keywords": ["student loans", "government", "public sector", "scheduling", "wfm", "workforce development"]
+    },
+    {
+      "slug": "hgs-creates-a-new-chapter-of-quality-management-from-the-ground-up-with-nice-quality-central",
+      "products": ["CXone Quality Management"],
+      "personas": ["agent-supervisor", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["quality management", "BPO operations", "evaluation at scale"],
+      "keywords": ["hgs", "bpo", "outsourcer", "quality management", "quality central", "evaluations"]
+    },
+    {
+      "slug": "case-study-open-network-exchange-one",
+      "products": ["CXone"],
+      "personas": ["cx-leader", "procurement"],
+      "depth": "overview",
+      "useCases": ["partner network", "growth", "BPO operations"],
+      "keywords": ["open network exchange", "one", "bpo", "partner network", "growth", "travel"]
+    },
+    {
+      "slug": "ee-expands-workforce-flexibility-and-engagement-with-nice-workforce-management",
+      "products": ["CXone Workforce Management"],
+      "personas": ["contact-center-ops", "agent-supervisor"],
+      "depth": "overview",
+      "useCases": ["workforce flexibility", "employee engagement", "telecom operations"],
+      "keywords": ["ee", "telecom", "telco", "mobile operator", "flexibility", "engagement", "wfm"]
+    },
+    {
+      "slug": "dutch-railways-gets-omnichannel-on-track-with-nice-cxone",
+      "products": ["CXone Digital", "CXone Routing"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["omnichannel", "transport operations", "passenger service"],
+      "keywords": ["dutch railways", "ns", "rail", "transport", "travel", "omnichannel", "netherlands"]
+    },
+    {
+      "slug": "from-tech-trailblazer-to-cx-leader-bamboo-insurance-accelerates-growth",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["growth", "insurance service", "digital transformation"],
+      "keywords": ["bamboo", "insurance", "insurtech", "growth", "claims", "policy"]
+    },
+    {
+      "slug": "the-ai-hybrid-workforce-is-here-why-systems-need-an-upgrade",
+      "products": ["CXone Workforce Management"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["hybrid workforce", "AI and human agents", "workforce planning"],
+      "keywords": ["hybrid workforce", "insurance", "ai agents", "planning", "systems", "upgrade"]
+    },
+    {
+      "slug": "helen-case-study",
+      "products": ["Cognigy AI Agents"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["agentic AI front door", "self-service", "utilities service"],
+      "keywords": ["helen", "utilities", "energy", "agentic ai", "front door", "self-service", "finland"]
+    },
+    {
+      "slug": "from-enrollment-cliff-to-lifelong-loyalty-orchestrating-the-student-journey-with-ai",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader"],
+      "depth": "overview",
+      "useCases": ["student journey", "enrolment", "education engagement"],
+      "keywords": ["education", "university", "student", "enrollment", "loyalty", "journey", "higher education"]
+    },
+    {
+      "slug": "cxone-interactive-voice-response",
+      "products": ["CXone Mpower"],
+      "personas": ["it-architect", "contact-center-ops"],
+      "depth": "functional",
+      "useCases": ["IVR", "voice self-service", "call steering"],
+      "keywords": ["ivr", "interactive voice response", "voice", "self-service", "menu", "call steering", "datasheet"]
+    },
+    {
+      "slug": "nice-employee-engagement-manager-eem",
+      "products": ["CXone Workforce Management"],
+      "personas": ["agent-supervisor", "contact-center-ops"],
+      "depth": "functional",
+      "useCases": ["employee engagement", "shift flexibility", "intraday management"],
+      "keywords": ["eem", "employee engagement manager", "shift", "intraday", "flexibility", "datasheet"]
+    },
+    {
+      "slug": "isg-buyers-guide-customer-experience-management-2026",
+      "products": ["CXone"],
+      "personas": ["procurement", "cx-leader"],
+      "depth": "overview",
+      "useCases": ["vendor evaluation", "analyst validation", "buying criteria"],
+      "keywords": ["isg", "buyers guide", "analyst", "evaluation", "vendor", "cxm", "2026"]
+    },
+    {
+      "slug": "everest-group-global-ccaas-peak-matrix-2026",
+      "products": ["CXone"],
+      "personas": ["procurement", "cx-leader"],
+      "depth": "overview",
+      "useCases": ["vendor evaluation", "analyst validation", "market positioning"],
+      "keywords": ["everest group", "peak matrix", "ccaas", "analyst", "leader", "2026", "global"]
+    },
+    {
+      "slug": "state-of-cx-tech-2026-the-technologies-shaping-cx",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "it-architect"],
+      "depth": "overview",
+      "useCases": ["market trends", "technology strategy", "planning"],
+      "keywords": ["state of cx tech", "trends", "2026", "technology", "research", "report"]
+    },
+    {
+      "slug": "ai-guided-analytics-a-smart-approach-to-transform-cx-results-maximize-success",
+      "products": ["CXone Interaction Analytics"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["guided analytics", "CX measurement", "actionable insight"],
+      "keywords": ["ai guided analytics", "analytics", "insight", "infographic", "measurement"]
+    },
+    {
+      "slug": "give-your-employees-the-cx-ai-copilot-they-deserve",
+      "products": ["CXone Agent Copilot"],
+      "personas": ["agent-supervisor", "cx-leader"],
+      "depth": "overview",
+      "useCases": ["agent assist", "copilot adoption", "employee experience"],
+      "keywords": ["copilot", "agent assist", "employee", "infographic", "productivity"]
+    },
+    {
+      "slug": "managing-the-hybrid-workforce-in-the-age-of-ai",
+      "products": ["CXone Workforce Management"],
+      "personas": ["contact-center-ops", "agent-supervisor"],
+      "depth": "overview",
+      "useCases": ["hybrid workforce", "workforce planning", "AI operating model"],
+      "keywords": ["hybrid workforce", "ebook", "planning", "ai", "remote", "management"]
+    },
+    {
+      "slug": "cx-ai-maturity-assessment-and-guidebook",
+      "products": ["CXone Mpower"],
+      "personas": ["cx-leader", "procurement"],
+      "depth": "overview",
+      "useCases": ["maturity assessment", "AI roadmap", "readiness"],
+      "keywords": ["maturity", "assessment", "guidebook", "roadmap", "readiness", "ebook", "ai maturity"]
+    },
+    {
+      "slug": "the-proactive-advantage-how-ai-is-transforming-outbound-campaigns-and-driving-customer-loyalty",
+      "products": ["NiCE Proactive Outreach"],
+      "personas": ["cx-leader", "contact-center-ops"],
+      "depth": "overview",
+      "useCases": ["outbound campaigns", "proactive engagement", "customer loyalty"],
+      "keywords": ["proactive", "outbound", "campaigns", "loyalty", "outreach", "white paper"]
+    },
+    {
+      "slug": "rapid-results-with-compliance-first-scalable-outbound-engagement",
+      "products": ["NiCE Proactive Outreach"],
+      "personas": ["contact-center-ops", "procurement"],
+      "depth": "functional",
+      "useCases": ["outbound compliance", "scalable outbound", "regulatory"],
+      "keywords": ["compliance", "outbound", "tcpa", "regulatory", "scalable", "engagement", "white paper"]
+    }
+  ]
+}

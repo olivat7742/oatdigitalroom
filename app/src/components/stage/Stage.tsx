@@ -10,6 +10,7 @@ import type { TourInfo } from '@/types/stageDirective'
 import { VideoAsset } from './VideoAsset'
 import { WalkthroughAsset } from './WalkthroughAsset'
 import { StaticAsset } from './StaticAsset'
+import { DocumentAsset } from './DocumentAsset'
 import { EmbedAsset } from './EmbedAsset'
 import { SummaryPanel } from './SummaryPanel'
 import { brand } from '@/theme'
@@ -95,7 +96,11 @@ export function Stage() {
         {asset?.type === 'video' && <VideoAsset key={asset.id} asset={asset} />}
         {asset?.type === 'embed' && <EmbedAsset key={asset.id} asset={asset} />}
         {asset?.type === 'walkthrough' && <WalkthroughAsset key={asset.id} asset={asset} />}
-        {asset && ['diagram', 'comparison', 'document'].includes(asset.type) && (
+        {/* Documents were previously routed to StaticAsset, which renders an <img>. That is
+            right for a diagram and wrong for a document: a resource page is not an image, so
+            it rendered as a broken frame. They get a card that proposes and opens them. */}
+        {asset?.type === 'document' && <DocumentAsset key={asset.id} asset={asset} />}
+        {asset && ['diagram', 'comparison'].includes(asset.type) && (
           <StaticAsset key={asset.id} asset={asset} />
         )}
       </Box>

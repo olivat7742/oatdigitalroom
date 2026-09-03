@@ -788,6 +788,125 @@ if (youtube?.videos?.length) {
   }
 }
 
+// Document assets, promoted from the nice.com resource library.
+//
+// The Digital Room is not only a video player: a visitor asking for proof, pricing rationale or
+// a compliance answer usually wants something to read and forward, not a demo to watch. These
+// give the stage something to propose in those cases.
+//
+// The split of responsibility is deliberate. Title, summary, content type and industries come
+// from catalog/nice-resources-enriched.json, so they stay NiCE's own words and update when the
+// site does. catalog/document-curation.json carries only what cannot be derived: which
+// resources are worth showing, and the products, personas, depth and keywords that make them
+// findable. Nothing here is invented about the resource itself.
+function readJson(...parts) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(repoRoot, ...parts), 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+const curation = readJson('catalog', 'document-curation.json')
+const enriched = readJson('catalog', 'nice-resources-enriched.json')
+const thumbnails = readJson('catalog', 'document-thumbnails.json')?.thumbnails ?? {}
+const docSkipped = []
+
+if (curation?.documents?.length) {
+  if (!enriched?.items?.length) {
+    // Deriving titles from slugs here would produce plausible-looking wrong titles under a
+    // "reference" the visitor may bookmark, so refuse instead.
+    console.error(
+      'Refusing to build documents: catalog/nice-resources-enriched.json is missing or empty.\n' +
+        'Run tools/fetch-nice-resources.ps1 then tools/enrich-nice-resources.ps1 first.',
+    )
+    process.exit(1)
+  }
+
+  const bySlug = new Map(enriched.items.map((item) => [item.slug, item]))
+
+  for (const doc of curation.documents) {
+    const resource = bySlug.get(doc.slug)
+    if (!resource) {
+      docSkipped.push(`${doc.slug} -> not in nice-resources-enriched.json`)
+      continue
+    }
+    // An inferred type is a keyword guess. Showing it as a badge would present a guess as a
+    // fact, so those are excluded rather than displayed with a caveat nobody reads.
+    if (resource.typeSource !== 'site') {
+      docSkipped.push(`${doc.slug} -> typeSource is "${resource.typeSource}", not "site"`)
+      continue
+    }
+
+    const prior = byId.get(doc.slug) ?? {}
+    const thumbnailUrl = thumbnails[doc.slug]
+    if (!thumbnailUrl) {
+      warnings.push(`No thumbnail for "${doc.slug}". Run tools/fetch-document-thumbnails.ps1.`)
+    }
+
+    assets.push({
+      id: doc.slug,
+      title: resource.title,
+      summary: resource.description,
+      type: 'document',
+      // NiCE's own content type from the listing taxonomy, never an inferred one: the check
+      // above guarantees typeSource is "site". Shown to the visitor as a badge.
+      documentType: resource.type,
+      // Published on nice.com, so the act of publishing is itself the external-use clearance,
+      // exactly as for the YouTube embeds. Attributed to the site rather than to a person.
+      approved: true,
+      products: doc.products,
+      useCases: doc.useCases,
+      personas: doc.personas,
+      depth: doc.depth,
+      ...(resource.industries?.length ? { industries: resource.industries } : {}),
+      source: {
+        provider: 'nice-web',
+        url: resource.url,
+        // Same value as url for a document: there is one public address and it is the page
+        // itself. Kept because the renderer and the citation layer both read watchUrl to mean
+        // "the canonical public link", so setting it makes documents citable with no special case.
+        watchUrl: resource.url,
+        ...(thumbnailUrl ? { thumbnailUrl } : {}),
+        requiresSignedUrl: false,
+      },
+      ...(prior.followUps?.length ? { followUps: prior.followUps } : {}),
+      ...(prior.talkingPoints?.length ? { talkingPoints: prior.talkingPoints } : {}),
+      // The site's own content type and industries are strong retrieval signal, so they join
+      // the curated keywords rather than living only in the badge.
+      keywords: [
+        ...new Set([
+          ...(doc.keywords ?? []),
+          resource.type.toLowerCase(),
+          ...(resource.industries ?? []).map((i) => i.toLowerCase()),
+        ]),
+      ],
+      references: prior.references?.length ? prior.references : referencesFor(doc.products),
+      reviewedOn: enriched.fetched ?? '2026-09-03',
+      reviewedBy: 'Published publicly by NiCE on nice.com/resources',
+    })
+  }
+}
+
+// Refuse to write a catalog that is missing curated documents, for the same reason as
+// missingMeta below: a partial write is worse than no write.
+//
+// This was originally a warning, which is a trap. tools/enrich-nice-resources.ps1 rewrites
+// nice-resources-enriched.json in place and flushes every 25 records, so a build that runs
+// while an enrichment is in flight sees a file holding 25 resources, drops all 27 documents,
+// prints warnings nobody reads in a 60-line log, and writes a catalog with no documents in it
+// at all. The app would then quietly have nothing to show.
+if (docSkipped.length) {
+  console.error('Refusing to write the catalog: curated documents could not be built.\n')
+  for (const name of docSkipped) console.error(`  - ${name}`)
+  console.error(
+    '\nIf a slug is simply absent, check catalog/document-curation.json against\n' +
+      'catalog/nice-resources-enriched.json. If many are absent at once, an enrichment run is\n' +
+      'probably still in progress: wait for it to finish and re-run.',
+  )
+  process.exit(1)
+}
+
 // Refuse to write a partial catalog. Writing one would delete the hand-authored chapters of
 // any asset whose file is present but unlisted.
 if (missingMeta.length) {
@@ -801,7 +920,7 @@ const out = {
   version: '0.4.0',
   updated: process.env['CATALOG_DATE'] ?? new Date().toISOString().slice(0, 10),
   notes:
-    'GENERATED by tools/build-catalog.mjs. Do not hand-edit source.url or ids; edit META in the script and regenerate. Chapters, talkingPoints and review fields ARE hand-authored and are carried over on regeneration. Most entries are NiCE World 2026 conference sessions, and their summaries are derived from the title card and filename rather than from watching the full session. Every asset is approved:false until a named human clears it for external use.',
+    'GENERATED by tools/build-catalog.mjs. Do not hand-edit source.url or ids; edit META, YOUTUBE_META or catalog/document-curation.json and regenerate. Chapters, talkingPoints and review fields ARE hand-authored and are carried over on regeneration. Three kinds of asset with three different clearance stories: local videos are NiCE World 2026 conference masters, summarised from the title card and filename rather than from watching the session, and are approved:false until a named human clears them; YouTube embeds and nice.com documents are approved:true because NiCE published them publicly, which is itself the clearance, and reviewedBy records that rather than naming a person.',
   assets,
   tours: existing.tours ?? [],
 }
@@ -818,6 +937,7 @@ if (ytSkipped.length) {
   console.log('\nYouTube videos excluded by curation:')
   for (const s of ytSkipped) console.log(`  - ${s}`)
 }
+console.log(`\nDocuments: ${assets.filter((a) => a.type === 'document').length} of ${curation?.documents?.length ?? 0} curated`)
 if (warnings.length) {
   console.log('\nWarnings:')
   for (const w of warnings) console.log(`  ! ${w}`)

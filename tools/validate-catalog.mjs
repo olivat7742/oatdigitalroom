@@ -182,11 +182,22 @@ function validate(file) {
 }
 
 const args = process.argv.slice(2)
+
+// Only actual catalogs by default.
+//
+// This used to be every catalog/*.json, which was fine when the directory held nothing else.
+// It now also holds inputs and datasets (durations, youtube-videos, document-curation,
+// document-thumbnails, the nice.com resource index and its enrichment), none of which are
+// catalogs. Validating those against the catalog schema reported "version is required" and
+// "assets is required" for each and exited 1, so the command failed by design and a genuine
+// error in the real catalog would have been lost in the noise.
+//
+// A named argument still validates whatever it is given, so nothing is unreachable.
 const files = args.length
   ? args
   : fs
       .readdirSync('catalog')
-      .filter((name) => name.endsWith('.json'))
+      .filter((name) => /^demo-catalog.*\.json$/.test(name))
       .map((name) => path.join('catalog', name))
 
 let failed = false

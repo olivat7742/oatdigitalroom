@@ -73,6 +73,10 @@
           "items": { "type": "string" },
           "description": "Omit when the asset is industry-neutral. Present means it is a strong match for those industries, not that it is restricted to them."
         },
+        "documentType": {
+          "type": "string",
+          "description": "For document assets: NiCE's own content type for the resource, taken from the nice.com/resources listing taxonomy, for example 'Case study' or 'White paper'. Never an inferred value, because it is shown to the visitor as a badge and a guessed badge presents a guess as a fact. Written by tools/build-catalog.mjs from catalog/nice-resources-enriched.json where typeSource is 'site'."
+        },
         "durationSeconds": { "type": "number" },
         "sizeMB": {
           "type": "number",

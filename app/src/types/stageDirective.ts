@@ -64,6 +64,17 @@ export interface StageAsset {
   id: string
   type: StageAssetType
   title?: string
+  /**
+   * Shown on the stage for documents, where the visitor is deciding whether the thing is worth
+   * opening. Carried from the catalog, never written by the agent, so the stage shows the
+   * publisher's own description rather than a generated paraphrase of it.
+   */
+  summary?: string
+  /**
+   * Short factual labels for a document: its content type and industries. Every value comes
+   * from the publisher's taxonomy, because these read as facts about the resource.
+   */
+  badges?: string[]
   /** Resolved by the backend. The client never assembles a URL. */
   src?: string
   /** For embeds: the canonical public page, for attribution and as a fallback. */

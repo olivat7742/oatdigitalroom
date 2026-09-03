@@ -34,21 +34,24 @@ Phase 2 of `../docs/build-plan.md` depends on the Cognigy agent, which is not li
 mode lets the entire stage experience be built and reviewed first, so that when the agent
 arrives there is something real to point it at.
 
-`MockTransport` is a scripted keyword matcher, not a model. It exists to exercise every
-stage renderer and every directive action.
-
-Try these in the chat to hit each renderer:
+`MockTransport` is a keyword matcher over the real catalog, not a model.
 
 | Say | Exercises |
 |---|---|
-| "How do you help agents during a conversation?" | Real video, Copilot for Agents |
-| "What does the supervisor experience look like?" | Real video, Supervisor |
-| "How does outbound engagement work?" | Real video, Outbound Engagement |
-| "Skip to the middle" | `seek` directive, verified against HTTP range requests |
-| "How do I build an AI agent?" | Walkthrough with hotspots and step navigation |
-| "How does this integrate with my stack?" | Diagram renderer |
+| "How do you help agents during a conversation?" | Video, CXone Agent Copilot |
+| "What does the supervisor experience look like?" | Video, Supervisor Workspace |
+| "Do you have a case study for a healthcare organisation?" | Document card, Case Study: Optum |
+| "Is CXone FedRAMP authorised for government use?" | Document card, a datasheet with badges |
 | "Give me the guided tour" | Tour progress rendering |
-| "How much does it cost?" | The pricing rail and a handoff CTA |
+| "Bye" | The closing summary panel |
+
+This table used to carry four more rows: a `seek` directive, a walkthrough with hotspots, a
+diagram renderer and a pricing rail. **None of them worked.** `MockTransport` has no handling
+for any of the four, and the catalog has zero walkthrough, diagram or comparison assets. They
+were true of the three-asset seed catalog and were never revisited when the catalog was
+regenerated from the real media. The renderers and the contract still support those types, so
+the gap is content, not code. Left recorded rather than quietly deleted, because a README that
+lists features which do not exist is worse than one with a known gap.
 
 ## Media
 
@@ -75,6 +78,42 @@ Validate the catalog after any edit:
 ```bash
 node tools/validate-catalog.mjs
 ```
+
+## Documents
+
+The stage is not only a video player. 27 resources from nice.com/resources are in the catalog
+as `document` assets, so a visitor who wants something to **read and forward** gets a card:
+NiCE's cover image, NiCE's own description, its content type and industries as badges, and a
+button opening the resource on nice.com.
+
+**They are proposed, not embedded.** Those pages set neither `X-Frame-Options` nor a CSP
+frame-ancestors policy, so they could be iframed. That would be worse: site navigation, cookie
+banner and footer inside a 60% pane, and any gated download form unusable at that width.
+
+**Documents used to route to `StaticAsset`**, which renders an `<img>`. A resource page is not
+an image, so it produced a broken frame. `DocumentAsset` replaced that.
+
+**Nothing about the resource is authored here.** Title, description, content type and
+industries come from `../catalog/nice-resources-enriched.json`, which is harvested from NiCE's
+own pages and listing taxonomy. `../catalog/document-curation.json` holds only what a crawl
+cannot derive: which resources are worth showing, and the products, personas, depth and
+keywords that make them findable. The build refuses to write a catalog whose curated documents
+are missing, rather than silently producing one with no documents in it.
+
+Two data traps found while building this, both worth knowing before trusting nice.com metadata:
+
+- **About a third of resource pages carry another page's Open Graph block.** The Optum case study declares `og:title` "Vera Bradley Embraces Digital-First Omnichannel" and an `og:description` about a luggage retailer, while its plain `description` meta is correctly about Optum. Showing a healthcare case study described as a handbag retailer is the kind of error that ends a demo, so the enrichment now distrusts the whole `og:` block when `og:title` contradicts the JSON-LD breadcrumb title.
+- **A document's content type is only ever NiCE's own.** The build rejects any curated document whose type was inferred by keyword, because the type is shown to the visitor as a badge and a guessed badge presents a guess as a fact.
+
+Retrieval for these is asserted, not assumed:
+
+```bash
+node tools/test-retrieval.mjs
+```
+
+To preview the card without conversing through the agent, the dev server serves a harness at
+`/verify-document.html`. It mounts the real component with real catalog data, including the
+no-thumbnail fallback that is otherwise almost never seen.
 
 ## Header personalisation
 

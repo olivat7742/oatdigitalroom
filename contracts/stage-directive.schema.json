@@ -89,6 +89,16 @@
               "description": "embed is a third-party player rendered in an iframe, currently YouTube. It differs from video in two ways that matter: position is applied as a start offset when the frame loads rather than as a live seek, and the host page cannot read playback state, so chapter narration does not fire."
             },
             "title": { "type": "string" },
+            "summary": {
+              "type": "string",
+              "description": "One or two sentences describing the asset, displayed on the stage. Used by document assets, where the visitor is deciding whether the thing is worth opening and the title alone does not tell them. Carried from the catalog, never written by the agent, so what is shown on the stage is the publisher's own description."
+            },
+            "badges": {
+              "type": "array",
+              "items": { "type": "string" },
+              "maxItems": 6,
+              "description": "Short factual labels shown next to a document, for example its content type and industries. Every value must come from the publisher's own taxonomy: these read as statements of fact about the resource, so an inferred value does not belong here. Deliberately one generic list rather than separate contentType and industries fields, because the renderer only lays them out, and two fields it treats identically would be a permanent contract obligation with no behaviour behind it."
+            },
             "src": { "type": "string", "description": "Resolved playable or renderable URL. Resolved by the backend, never assembled by the agent." },
             "posterUrl": { "type": "string" },
             "durationSeconds": { "type": "number" },
