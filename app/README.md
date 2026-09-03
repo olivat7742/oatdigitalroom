@@ -76,6 +76,26 @@ Validate the catalog after any edit:
 node tools/validate-catalog.mjs
 ```
 
+## Citations and further reading
+
+Every agent reply carries somewhere to go for more detail, in three layers:
+
+1. **The asset it showed**, cited by name. A real link where the asset has a public address, which today means the YouTube ones.
+2. **Product references** from the catalog's `references`, generated from the asset's products.
+3. **Fallback references** when a reply shows nothing at all, including a pricing refusal or "there is no demo of that". Those are exactly the replies where a visitor most wants another route.
+
+**Local assets deliberately get no link.** They are served from the dev media route, which
+means nothing on anyone else's machine. A citation that dies the moment it is bookmarked is
+worse than none, so those say "no public link yet" instead. Give one a `source.watchUrl` in the
+catalog and it becomes a link automatically.
+
+Every reference URL was verified to return 200 rather than constructed: two plausible-looking
+guesses 404'd while authoring the map. Re-check after any NiCE site reorganisation:
+
+```bash
+pwsh tools/check-links.ps1
+```
+
 ## Design rules this code follows
 
 **The Stage is a thin renderer.** It holds no product logic and decides nothing about what

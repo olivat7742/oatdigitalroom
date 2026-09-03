@@ -30,8 +30,10 @@ function ReferenceLinks({ references }: { references: AssetReference[] }) {
       sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'rgba(34, 33, 43, 0.10)' }}
     >
       <MenuBookRoundedIcon sx={{ fontSize: 13, color: brand.darkGray, mt: '2px', flexShrink: 0 }} />
-      <Box sx={{ minWidth: 0 }}>
-        <Typography variant="caption" sx={{ color: brand.darkGray, mr: 0.5 }}>
+      {/* Inline flow rather than a flex row, so several links wrap onto new lines instead of
+          forcing the rail to scroll sideways. overflowWrap catches a single long label. */}
+      <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+        <Typography component="span" variant="caption" sx={{ color: brand.darkGray, mr: 0.5 }}>
           More detail:
         </Typography>
         {references.map((reference, index) => (
@@ -49,7 +51,6 @@ function ReferenceLinks({ references }: { references: AssetReference[] }) {
               sx={{
                 color: brand.primaryDark,
                 textDecorationColor: 'rgba(44, 121, 238, 0.35)',
-                whiteSpace: 'nowrap',
               }}
             >
               {reference.label}

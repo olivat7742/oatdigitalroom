@@ -68,7 +68,9 @@ export function ChatRail() {
         borderRadius: 3,
       }}
     >
-      <Stack spacing={1.75} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 2.5 }}>
+      {/* overflowX hidden on purpose: citation links used to push the rail sideways rather
+          than wrap, which put a horizontal scrollbar under the conversation. */}
+      <Stack spacing={1.75} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', p: 2.5 }}>
         {messages.length === 0 && connection !== 'open' && (
           <Typography variant="body2" sx={{ color: brand.darkGray }}>
             Connecting to the guide...
