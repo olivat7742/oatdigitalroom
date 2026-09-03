@@ -17,8 +17,64 @@
         },
         "action": {
           "type": "string",
-          "enum": ["show", "play", "pause", "seek", "highlight", "step", "clear"],
-          "description": "show = render asset without autoplay. play = render and start. seek = jump within the current asset. highlight = draw attention to a region of the current asset. step = advance a walkthrough or tour. clear = empty the stage."
+          "enum": ["show", "play", "pause", "seek", "highlight", "step", "clear", "wrapup"],
+          "description": "show = render asset without autoplay. play = render and start. seek = jump within the current asset. highlight = draw attention to a region of the current asset. step = advance a walkthrough or tour. clear = empty the stage. wrapup = replace the stage with the closing summary; the chat stays open and the visitor can carry on, which is why it does not end the session."
+        },
+        "summary": {
+          "type": "object",
+          "description": "Required for action=wrapup. The closing summary, built from what the visitor ACTUALLY viewed rather than from the model's recollection of the conversation.",
+          "required": ["viewed", "topics"],
+          "additionalProperties": false,
+          "properties": {
+            "headline": { "type": "string", "description": "Short closing line, usually including their first name." },
+            "viewed": {
+              "type": "array",
+              "description": "Assets actually put on the stage this session, in order, deduplicated.",
+              "items": {
+                "type": "object",
+                "required": ["assetId", "title"],
+                "additionalProperties": false,
+                "properties": {
+                  "assetId": { "type": "string" },
+                  "title": { "type": "string" },
+                  "durationSeconds": { "type": "number" },
+                  "watchUrl": { "type": "string", "description": "Present only where the asset has a genuinely public address." },
+                  "references": {
+                    "type": "array",
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": ["label", "url"],
+                      "additionalProperties": false,
+                      "properties": { "label": { "type": "string" }, "url": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            },
+            "topics": {
+              "type": "array",
+              "description": "Candidate topics to explore further, offered as checkboxes. Derived from the use cases and products of what they viewed, plus what they said they were interested in.",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "required": ["id", "label"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string" },
+                  "label": { "type": "string" },
+                  "preselected": {
+                    "type": "boolean",
+                    "description": "True for topics drawn from what they actually watched, as opposed to adjacent suggestions."
+                  }
+                }
+              }
+            },
+            "emailKnown": {
+              "type": "boolean",
+              "description": "Whether an email address was captured during the introduction. The panel must NOT assume permission to use it: having an address is not consent to be contacted, so the follow-up offer is an explicit opt-in."
+            }
+          }
         },
         "asset": {
           "type": "object",

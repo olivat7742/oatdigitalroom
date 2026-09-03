@@ -5,6 +5,7 @@ import {
   type Cta,
   type StageAsset,
   type StageDirective,
+  type StageSummary,
   type TourInfo,
 } from '@/types/stageDirective'
 import type { ConnectionState, InboundMessage, Transport } from '@/transport/types'
@@ -43,6 +44,8 @@ export interface Message {
 
 export interface StageState {
   asset: StageAsset | null
+  /** Closing summary. When set, it replaces the asset on the stage. */
+  summary: StageSummary | null
   playing: boolean
   /** Zero-based index for walkthrough steps. */
   stepIndex: number
@@ -73,6 +76,7 @@ interface SessionState {
 
 const EMPTY_STAGE: StageState = {
   asset: null,
+  summary: null,
   playing: false,
   stepIndex: 0,
   highlighted: false,
@@ -100,10 +104,16 @@ export function applyDirective(stage: StageState, directive: StageDirective): St
     case 'clear':
       return { ...EMPTY_STAGE }
 
+    case 'wrapup':
+      // Replaces whatever was playing. The chat keeps running, so this is a change of view,
+      // not the end of the session: any later show or play brings the stage straight back.
+      return { ...EMPTY_STAGE, summary: directive.summary ?? null }
+
     case 'show':
     case 'play':
       return {
         asset: directive.asset ?? null,
+        summary: null,
         playing: directive.action === 'play',
         stepIndex: 0,
         highlighted: false,

@@ -91,6 +91,30 @@ The identity reaches the client as `data._visitor`, a deliberate **sibling** of 
 rather than part of it: it says nothing about what is on the stage, and the Stage has no
 business knowing who is watching. Contract: `../contracts/visitor-payload.schema.json`.
 
+## The closing summary
+
+When the visitor signals they are done, the agent calls `wrap_up` and the stage switches to a
+summary: what they watched, checkboxes of topics to explore, and three follow-up offers.
+
+Three things about it are deliberate:
+
+**It does not end the conversation.** The chat rail stays live and any later demo replaces the
+panel. Someone who says "bye" and then thinks of one more question should not have to start
+over, which is why the directive is `wrapup` rather than anything that closes a session.
+
+**The recap is built from what was actually shown**, not from the model's recollection. The
+Cognigy `show_demo` tool appends each played assetId to `context.digitalRoomViewed`, and
+`wrap_up` reads that list back. Asking the model to remember its own session would produce a
+confident and occasionally wrong list.
+
+**A captured email is not consent to send one.** The address was given so the visitor could be
+followed up *if they asked*. Using it because we have it would be a different purpose from the
+one they were told, so the opt-in checkbox is the consent, and the send button stays disabled
+until it is ticked.
+
+Every action round-trips through the agent as an ordinary message rather than calling a tool
+directly, so the transcript remains the single record of what was agreed.
+
 ## Citations and further reading
 
 Every agent reply carries somewhere to go for more detail, in three layers:

@@ -22,7 +22,19 @@ export type StageAssetType =
    */
   | 'embed'
 
-export type StageAction = 'show' | 'play' | 'pause' | 'seek' | 'highlight' | 'step' | 'clear'
+export type StageAction =
+  | 'show'
+  | 'play'
+  | 'pause'
+  | 'seek'
+  | 'highlight'
+  | 'step'
+  | 'clear'
+  /**
+   * Replaces the stage with the closing summary. The chat stays open and the visitor can keep
+   * going, so this is a change of view rather than the end of a session.
+   */
+  | 'wrapup'
 
 export type CtaKind = 'quick_reply' | 'next_asset' | 'tour_next' | 'tour_back' | 'handoff'
 
@@ -84,10 +96,38 @@ export interface AssetReference {
   url: string
 }
 
+export interface ViewedAsset {
+  assetId: string
+  title: string
+  durationSeconds?: number
+  /** Present only where the asset has a genuinely public address. */
+  watchUrl?: string
+  references?: AssetReference[]
+}
+
+export interface SummaryTopic {
+  id: string
+  label: string
+  /** True for topics drawn from what they actually watched, rather than adjacent suggestions. */
+  preselected?: boolean
+}
+
+export interface StageSummary {
+  headline?: string
+  viewed: ViewedAsset[]
+  topics: SummaryTopic[]
+  /**
+   * Whether an email was captured. The panel must not treat this as permission to use it:
+   * having someone's address is not their consent to be contacted.
+   */
+  emailKnown?: boolean
+}
+
 export interface StageDirective {
   v: number
   action: StageAction
   asset?: StageAsset
+  summary?: StageSummary
   /** Seconds for seek, zero-based index for step. */
   position?: number
   tour?: TourInfo
@@ -102,6 +142,7 @@ const ACTIONS: readonly StageAction[] = [
   'highlight',
   'step',
   'clear',
+  'wrapup',
 ]
 
 const ASSET_TYPES: readonly StageAssetType[] = [
@@ -155,10 +196,22 @@ export function extractDirective(data: unknown): StageDirective | null {
     return null
   }
 
+  const summary = isRecord(envelope['summary'])
+    ? (envelope['summary'] as unknown as StageSummary)
+    : undefined
+
+  // A wrapup with no summary would blank the stage and show an empty panel, which reads as a
+  // broken app rather than a closing screen.
+  if (action === 'wrapup' && (!summary || !Array.isArray(summary.viewed) || !Array.isArray(summary.topics))) {
+    console.warn('[showroom] ignoring wrapup directive with no usable summary')
+    return null
+  }
+
   return {
     v: STAGE_DIRECTIVE_VERSION,
     action: action as StageAction,
     asset,
+    summary,
     position: typeof envelope['position'] === 'number' ? envelope['position'] : undefined,
     tour: isRecord(envelope['tour']) ? (envelope['tour'] as unknown as TourInfo) : undefined,
     cta: Array.isArray(envelope['cta']) ? (envelope['cta'] as Cta[]).slice(0, 4) : undefined,

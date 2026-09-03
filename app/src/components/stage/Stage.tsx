@@ -11,6 +11,7 @@ import { VideoAsset } from './VideoAsset'
 import { WalkthroughAsset } from './WalkthroughAsset'
 import { StaticAsset } from './StaticAsset'
 import { EmbedAsset } from './EmbedAsset'
+import { SummaryPanel } from './SummaryPanel'
 import { brand } from '@/theme'
 
 function TourProgress({ tour }: { tour: TourInfo }) {
@@ -60,6 +61,7 @@ function EmptyStage() {
 
 export function Stage() {
   const asset = useSessionStore((s) => s.stage.asset)
+  const summary = useSessionStore((s) => s.stage.summary)
   const tour = useSessionStore((s) => s.tour)
 
   return (
@@ -75,16 +77,19 @@ export function Stage() {
         borderRadius: 3,
       }}
     >
-      {tour && <TourProgress tour={tour} />}
+      {tour && !summary && <TourProgress tour={tour} />}
 
-      {asset && (
+      {asset && !summary && (
         <Typography variant="h5" sx={{ pb: 2, color: brand.black }} noWrap>
           {asset.title ?? asset.id}
         </Typography>
       )}
 
       <Box sx={{ flex: 1, minHeight: 0 }}>
-        {!asset && <EmptyStage />}
+        {/* The summary takes the whole stage. Checked before the asset so a wrapup arriving
+            mid-playback replaces the video rather than rendering behind it. */}
+        {summary && <SummaryPanel summary={summary} />}
+        {!asset && !summary && <EmptyStage />}
         {/* key={asset.id} deliberately remounts renderers so per-asset playback and step
             state resets, rather than being manually cleared in a dozen places. */}
         {asset?.type === 'video' && <VideoAsset key={asset.id} asset={asset} />}

@@ -1,6 +1,19 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
 import { FALLBACK, GREETING, ONBOARDING, SCRIPT, type ScriptedStep } from '@/fixtures/conversation'
-import { formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
+import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
+import type { StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
+
+/**
+ * The three actions the summary panel can submit.
+ *
+ * Matched before everything else, because they read like topic queries: "Please email me
+ * documentation links about supervisor experience, coaching..." was being matched as a demo
+ * request and played a video over the summary the visitor had just filled in.
+ */
+const FOLLOWUP = /^(please email me documentation links|i would like to speak with a nice sales representative|please arrange a callback)/i
+
+/** Farewells that should close with the summary rather than be searched for in the catalog. */
+const FAREWELL = /^\s*(bye|goodbye|good bye|see you|see ya|thanks,? that'?s all|that'?s all|that is all|i'?m done|im done|we'?re done|no thanks,? bye|ciao|au revoir|merci,? au revoir|end|finish|wrap up|that will be all)\b/i
 
 /**
  * Builds a turn from a catalog search, or null when nothing matches.
@@ -75,6 +88,16 @@ export class MockTransport implements Transport {
   private onboardingStep = 0
   private readonly visitor: Record<string, string> = {}
 
+  /**
+   * Assets actually put on the stage, in order, deduplicated.
+   *
+   * Recorded from the outgoing directives rather than from the matcher, so every path that
+   * shows something is captured without each one having to remember to log it. The closing
+   * summary is built from this, so it reflects what the visitor really saw rather than what
+   * the script intended.
+   */
+  private readonly viewed: ViewedAsset[] = []
+
   onMessage(handler: (m: InboundMessage) => void): void {
     this.messageHandler = handler
   }
@@ -109,6 +132,17 @@ export class MockTransport implements Transport {
     // like "retail" is treated as an answer rather than a demo request.
     if (this.onboardingStep < ONBOARDING.length) {
       this.replay(this.advanceOnboarding(text))
+      return
+    }
+
+    // Checked before the catalog search, or these would be matched as topics.
+    if (FOLLOWUP.test(text)) {
+      this.replay(this.acknowledgeFollowUp(text))
+      return
+    }
+
+    if (FAREWELL.test(text)) {
+      this.replay(this.wrapUp())
       return
     }
 
@@ -203,9 +237,96 @@ export class MockTransport implements Transport {
    * Plays a scripted sequence with a typing indicator in between, so the pacing of the real
    * thing is visible during review. Latency here is cosmetic and intentionally generous.
    */
+  /** Records an asset the moment a directive puts it on the stage. */
+  private recordViewed(step: ScriptedStep): void {
+    const data = step.message.data as { _showroom?: { action?: string; asset?: { id?: string } } } | undefined
+    const directive = data?._showroom
+    if (!directive || (directive.action !== 'play' && directive.action !== 'show')) return
+
+    const id = directive.asset?.id
+    if (!id || this.viewed.some((v) => v.assetId === id)) return
+
+    const entry = findAsset(id)
+    if (!entry) return
+
+    this.viewed.push({
+      assetId: entry.id,
+      title: entry.title,
+      ...(entry.durationSeconds !== undefined ? { durationSeconds: entry.durationSeconds } : {}),
+      ...(entry.source.watchUrl ? { watchUrl: entry.source.watchUrl } : {}),
+      ...(entry.references?.length ? { references: entry.references } : {}),
+    })
+  }
+
+  /**
+   * Builds the closing summary from what was actually viewed, plus a couple of adjacent
+   * suggestions drawn from what they said they were interested in.
+   */
+  private wrapUp(): ScriptedStep[] {
+    const name = (this.visitor['firstName'] ?? '').split(/\s+/)[0] ?? ''
+    const topics: SummaryTopic[] = []
+    const seen = new Set<string>()
+
+    // Topics they demonstrably engaged with, pre-ticked.
+    for (const item of this.viewed) {
+      for (const useCase of findAsset(item.assetId)?.useCases ?? []) {
+        const id = useCase.toLowerCase()
+        if (seen.has(id)) continue
+        seen.add(id)
+        topics.push({ id, label: useCase, preselected: true })
+      }
+    }
+
+    // Adjacent suggestions, unticked, so the list is not limited to what they already saw.
+    for (const asset of searchCatalog(this.visitor['interest'] ?? '', 3)) {
+      for (const useCase of asset.useCases) {
+        const id = useCase.toLowerCase()
+        if (seen.has(id) || topics.length >= 8) continue
+        seen.add(id)
+        topics.push({ id, label: useCase })
+      }
+    }
+
+    const summary: StageSummary = {
+      headline: name ? `Thanks, ${name}.` : 'Thanks for visiting.',
+      viewed: this.viewed,
+      topics: topics.slice(0, 8),
+      emailKnown: Boolean(this.visitor['email']),
+    }
+
+    return [
+      {
+        delayMs: 600,
+        message: {
+          text:
+            this.viewed.length > 0
+              ? 'I have put a short summary on the left. Tick whatever you would like to go further on, and tell me how you would like to follow up.'
+              : 'Thanks for stopping by. There is a summary on the left if you would like documentation or to speak with someone.',
+          data: { _showroom: { v: 1, action: 'wrapup', summary, cta: [] } },
+        },
+      },
+    ]
+  }
+
+  /**
+   * Confirms a follow-up request. Emits NO stage directive on purpose: the summary the visitor
+   * just filled in must stay where it is, rather than being replaced by the acknowledgement.
+   */
+  private acknowledgeFollowUp(text: string): ScriptedStep[] {
+    const lower = text.toLowerCase()
+    const reply = lower.startsWith('please email me')
+      ? 'Noted. In the live version that sends the documentation links to your email. This build does not send mail, so nothing has actually gone out.'
+      : lower.startsWith('please arrange a callback')
+        ? 'Noted. In the live version this creates a callback request for a Solutions Engineer. This build does not route anything yet.'
+        : 'Noted. In the live version this hands you to a Solutions Engineer in CXone Digital, carrying everything you looked at. This build does not route anything yet.'
+
+    return [{ delayMs: 550, message: { text: reply } }]
+  }
+
   private replay(steps: ScriptedStep[]): void {
     let elapsed = 0
     this.typingHandler?.(true)
+    for (const step of steps) this.recordViewed(step)
 
     steps.forEach((step, index) => {
       elapsed += step.delayMs
