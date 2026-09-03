@@ -1,5 +1,5 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
-import { FALLBACK, GREETING, SCRIPT, type ScriptedStep } from '@/fixtures/conversation'
+import { FALLBACK, GREETING, ONBOARDING, SCRIPT, type ScriptedStep } from '@/fixtures/conversation'
 import { formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
 
 /**
@@ -61,6 +61,20 @@ export class MockTransport implements Transport {
   private timers = new Set<ReturnType<typeof setTimeout>>()
   private disposed = false
 
+  /**
+   * Where the visitor is in the five-question introduction, and what they have said.
+   *
+   * The real agent does this with a tool that decides the next question. Mock mode reproduces
+   * the same sequence so the public build opens the way the live one does. It stores answers
+   * verbatim rather than parsing them: there is no model here, and pretending to extract
+   * structured fields from free text would only produce confident nonsense.
+   *
+   * Nothing leaves the browser. This build has no backend to send it to, which is exactly why
+   * the public link can run the flow without collecting anything.
+   */
+  private onboardingStep = 0
+  private readonly visitor: Record<string, string> = {}
+
   onMessage(handler: (m: InboundMessage) => void): void {
     this.messageHandler = handler
   }
@@ -91,6 +105,13 @@ export class MockTransport implements Transport {
   }
 
   send(text: string): void {
+    // The introduction comes first, and takes precedence over the topic matchers so an answer
+    // like "retail" is treated as an answer rather than a demo request.
+    if (this.onboardingStep < ONBOARDING.length) {
+      this.replay(this.advanceOnboarding(text))
+      return
+    }
+
     const turn = SCRIPT.find((candidate) => candidate.match.test(text))
     if (turn) {
       this.replay(turn.steps)
@@ -100,6 +121,60 @@ export class MockTransport implements Transport {
     // wording. Everything else falls through to a catalog search, so all thirty assets are
     // reachable here rather than only the handful with hand-written turns.
     this.replay(catalogSearchTurn(text) ?? FALLBACK)
+  }
+
+  /**
+   * Records the answer, then either asks the next question or closes the introduction with
+   * three suggestions built from what they said.
+   */
+  private advanceOnboarding(answer: string): ScriptedStep[] {
+    const step = ONBOARDING[this.onboardingStep]
+    if (step) {
+      // The whole answer goes against every field the step covers. Crude, and honest about it:
+      // there is no model here to split "Acme, Head of Ops" into two fields.
+      for (const field of step.fields) this.visitor[field] = answer.trim()
+    }
+    this.onboardingStep += 1
+
+    const next = ONBOARDING[this.onboardingStep]
+    if (next) {
+      return [{ delayMs: 550, message: { text: next.question } }]
+    }
+
+    return this.introductionComplete()
+  }
+
+  /** Closes the introduction with suggestions drawn from the catalog, using their own words. */
+  private introductionComplete(): ScriptedStep[] {
+    const interest = this.visitor['interest'] ?? ''
+    const department = this.visitor['department'] ?? ''
+    const name = (this.visitor['firstName'] ?? '').split(/\s+/)[0] ?? ''
+
+    const matches = searchCatalog(`${interest} ${department}`.trim(), 3)
+    const suggestions = matches.length > 0 ? matches : searchCatalog('agent supervisor outbound', 3)
+
+    const lead = name ? `Thanks, ${name}.` : 'Thanks.'
+    const lines = suggestions.map((asset) => `· ${asset.title} (${formatRuntime(asset.durationSeconds)})`)
+
+    return [
+      {
+        delayMs: 650,
+        message: {
+          text: `${lead} Based on that, here is what I would start with:\n\n${lines.join('\n')}\n\nPick one, or ask me anything else.`,
+          data: {
+            _showroom: {
+              v: 1,
+              action: 'clear',
+              cta: suggestions.slice(0, 3).map((asset) => ({
+                label: asset.title.length > 30 ? `${asset.title.slice(0, 28)}...` : asset.title,
+                value: asset.title,
+                kind: 'quick_reply' as const,
+              })),
+            },
+          },
+        },
+      },
+    ]
   }
 
   /**

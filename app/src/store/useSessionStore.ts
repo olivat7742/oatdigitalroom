@@ -188,9 +188,24 @@ export const useSessionStore = create<SessionState>((set, get) => {
         // Every agent reply carries further reading. Prefer the shown asset's own references,
         // which are product-specific, and fall back to the general ones so a reply that shows
         // nothing still leaves the visitor somewhere to go.
-        agentMessage.references = shownAsset?.references?.length
-          ? shownAsset.references
-          : DEFAULT_REFERENCES
+        //
+        // Suppressed when identical to the previous agent reply's set. Without this the same
+        // three links repeat under all five one-line questions of the opening introduction,
+        // which turns a useful affordance into wallpaper. The set still reappears the moment
+        // it changes, which is exactly when it carries new information.
+        const references = shownAsset?.references?.length ? shownAsset.references : DEFAULT_REFERENCES
+
+        // Compare against the last set actually SHOWN, not the previous message's field.
+        // Comparing to the previous message resets on every suppressed turn, which made the
+        // block alternate on and off rather than staying hidden.
+        const lastShown = [...state.messages]
+          .reverse()
+          .find((m) => m.role === 'agent' && m.references?.length)
+        const key = (list?: AssetReference[]) => (list ?? []).map((r) => r.url).join('|')
+
+        if (key(references) !== key(lastShown?.references)) {
+          agentMessage.references = references
+        }
 
         next.messages = [...state.messages, agentMessage]
       }

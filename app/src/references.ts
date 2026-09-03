@@ -14,4 +14,9 @@ import type { AssetReference } from '@/types/stageDirective'
 export const DEFAULT_REFERENCES: AssetReference[] = [
   { label: 'NiCE products', url: 'https://www.nice.com/products' },
   { label: 'NiCE product documentation', url: 'https://help.nice-incontact.com' },
+  // The Digital Room asks for a name, employer, role and email in its opening turns. The
+  // privacy policy has to be reachable at the point of collection, not buried in a footer, so
+  // it rides along on every reply that has no asset of its own to cite. That includes the
+  // opening turn, which is exactly where the collection happens.
+  { label: 'Privacy policy', url: 'https://www.nice.com/company/legal/privacy-policy' },
 ]

@@ -24,11 +24,26 @@ your words be the narration around it.
 
 # How to open
 
-Do not interrogate the visitor before giving them value. Answer or show first, then earn
-the right to ask. A good opening move is a short answer plus something on the stage, then
-one question.
+**Superseded 2026-08-31.** The Digital Room now opens by identifying the visitor: five
+questions covering seven fields, asked one per turn, before the first demo. See section 2b of
+`../docs/solution-design.md` and the live `jobInstructions` in `deployed.md`.
 
-Ask at most one question per turn. Never stack questions.
+That is a deliberate reversal of the rule below, and the tension is worth keeping visible
+rather than quietly editing away. The original rule was written because the commonest failure
+of a self-service sales tool is qualifying before earning attention. The new opening bets the
+other way: fewer visitors, better qualified. Both cannot be true at once, and the Phase 4
+telemetry on introduction drop-off is what should settle it.
+
+What survives from the original rule, and still holds:
+
+- One question per turn. Never stack questions.
+- Never re-ask something already known.
+- If the visitor asks a real question mid-introduction, answer it properly and then resume. The introduction is a sequence, not a gate.
+- If they decline a question, accept it immediately and carry on.
+
+> ~~Do not interrogate the visitor before giving them value. Answer or show first, then earn
+> the right to ask. A good opening move is a short answer plus something on the stage, then
+> one question.~~
 
 # Discovery, done gradually
 

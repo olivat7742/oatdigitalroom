@@ -93,11 +93,66 @@ company, so they are excellent *source material* when authoring the curated publ
 and the per-asset `talkingPoints`. The distinction that matters: a person clears the
 wording before it enters the runtime universe.
 
-### Privacy, unchanged
+## 2b. Visitor identification
 
-Lead capture is personal data and GDPR applies. Explicit consent before capture, stated
-purpose, no capture as a silent side effect of conversation, erasure supported by session
-id.
+Decided 2026-08-31, and it revises the original "email only at handoff" position.
+
+The conversation opens by identifying the visitor: **five questions covering seven fields**,
+asked conversationally by the agent, one per turn.
+
+| Question | Fields |
+|---|---|
+| Their name | firstName, lastName |
+| Where they work and their role | company, jobTitle |
+| Business email | email |
+| Which department the project is for | department |
+| What kind of solution they are looking at | interest |
+
+**It is not a gate.** There is no form in front of the chat and nothing blocks an
+unidentified visitor. The agent leads with the introduction, but if the visitor asks a real
+question first it answers properly and then resumes. Three reasons that is the right shape
+here:
+
+- A client-side gate would be security theatre. The Cognigy endpoint is reachable directly and the catalog is in a public repo, so a form stops only non-technical visitors.
+- All runtime content is public and approved, so there is nothing to protect.
+- Gating before giving value is the classic way a self-service sales tool loses the visitors it wanted.
+
+**It does trade against a principle in the agent's own instructions.** The agent is told not
+to interrogate before giving value. Five opening questions is deliberately the opposite bet:
+fewer visitors, better qualified. Worth revisiting if drop-off at the introduction turns out
+to be high, which the Phase 4 telemetry will show.
+
+### Where the identity goes
+
+`OAT_DIGITAL_ROOM_save_visitor_profile` writes to the **Cognigy contact profile**, with
+session context as a mirror and fallback. Two things were discovered by enumerating the
+tenant's API rather than assumed, and both had already caused a silent fallback to context:
+
+- The action is `actions.updateProfile`, not `actions.addToContactProfile`.
+- The default profile schema has `firstname`, `lastname` and `email` but **no** company, jobTitle or department. Those go to `actions.addContactMemory`.
+
+Salesforce logging is explicitly out of scope for now.
+
+### Privacy
+
+Collecting a name, employer, role and email is personal data processing, from an EU-facing
+page, before any value is given. What is in place:
+
+- The agent states the purpose in its opening turn.
+- The privacy policy is rendered as a link under every reply that has no asset to cite, which includes the opening turn. Reachable at the point of collection, not buried in a footer.
+- The agent never implies the visitor must answer, and accepts a refusal without repeating the request.
+
+What is **not** in place, and needs a decision before this faces real prospects:
+
+- **No consent record.** The profile schema carries `accepted_gdpr`, `privacy_policy` and `prevent_data_collection`, and none are set. Setting `accepted_gdpr` without asking would be a false record, so it is deliberately left alone. If you want a consent flag, the agent has to ask for consent explicitly.
+- **No retention policy or erasure path** for the contact profile.
+- Identification for access is legally distinct from permission to market. Do not treat having their email as permission to contact them.
+
+### Lead capture, unchanged
+
+`request_handoff` still enforces explicit consent before storing contact details, separately
+from the introduction. Having someone's email because they typed it into a demo is not the
+same as their agreement to be contacted about it.
 
 ---
 

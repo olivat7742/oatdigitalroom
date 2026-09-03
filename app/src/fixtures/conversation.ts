@@ -72,25 +72,37 @@ export interface ScriptedTurn {
   steps: ScriptedStep[]
 }
 
+/**
+ * The five introduction questions, mirroring the QUESTION_PLAN in the Cognigy
+ * OAT_DIGITAL_ROOM_store_visitor_profile Code node.
+ *
+ * Kept deliberately in step with the live agent so the public Pages build does not
+ * misrepresent how the real thing opens. If you change the plan in Cognigy, change it here.
+ */
+export interface OnboardingStep {
+  /** Profile keys this answer fills. */
+  fields: string[]
+  question: string
+}
+
+export const ONBOARDING: OnboardingStep[] = [
+  { fields: ['firstName', 'lastName'], question: 'To start, what is your name?' },
+  { fields: ['company', 'jobTitle'], question: 'Thanks. Where do you work, and what is your role there?' },
+  {
+    fields: ['email'],
+    question:
+      'What is your business email? It is so I can follow up, or send you anything you want to keep.',
+  },
+  { fields: ['department'], question: 'Which department or team is this project for? It need not be your own.' },
+  { fields: ['interest'], question: 'Last one. What kind of solution are you looking at, in your own words?' },
+]
+
 export const GREETING: ScriptedStep[] = [
   {
     delayMs: 400,
     message: {
-      text: "Welcome to the Digital Room. Ask me about CXone or Cognigy and I'll show you rather than describe it.\n\nWhat would you like to see?",
-      data: {
-        _showroom: {
-          v: 1,
-          action: 'clear',
-          cta: [
-            { label: 'Helping agents', value: 'How do you help agents during a conversation?', kind: 'quick_reply' },
-            { label: 'Supervising AI agents', value: 'What does the supervisor experience look like?', kind: 'quick_reply' },
-            { label: 'Outbound compliance', value: 'How does outbound engagement work?', kind: 'quick_reply' },
-            // Surfaces the jump-to-a-moment capability immediately, since it is the least
-            // discoverable and the most persuasive thing the guide does.
-            { label: 'Jump to a specific moment', value: 'Skip to the part where the AI agent is built in Cognigy', kind: 'quick_reply' },
-          ],
-        },
-      },
+      text: `Welcome to the NiCE Digital Room.\n\nSo I can tailor what I show you rather than guess, I'd like to start with a few quick questions. Nothing long, and the privacy policy is linked below.\n\n${ONBOARDING[0]?.question ?? ''}`,
+      data: { _showroom: { v: 1, action: 'clear', cta: [] } },
     },
   },
 ]
