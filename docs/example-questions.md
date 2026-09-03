@@ -92,7 +92,21 @@ visitor would get NiCE's site navigation, cookie banner and footer inside a 60% 
 gated download form would be unusable at that width.
 
 Every row below is asserted by `tools/test-retrieval.mjs`, so if one stops returning what it
-says here, the check fails.
+says here, the check fails. All of them were also run against the **live Cognigy agent** on
+2026-09-03: 12 of 13 tried returned the intended asset first time, and the 13th, the retailer
+question, was fixed by adding keywords and re-verified.
+
+Two live caveats worth knowing before you demo:
+
+**Roughly two answers in ten still describe a document in video terms**, for example "this
+video will play from the start" about a case study. `find_demo` hands the agent chapter fields
+and no asset type, so it infers. The persona was tightened twice and most cases are right; the
+deterministic fix needs the `find_demo` Code node.
+
+**Do not ask the agent to answer without letting it search.** "Name the exact asset only"
+produced an invented case study, `"Humana: Transforming Member Experience with CXone"`, which
+exists nowhere. The guardrail now forbids naming anything a tool has not returned, and the same
+prompt behaves, but the general lesson stands: pressing for brevity can bypass grounding.
 
 ### Customer proof, by industry
 
