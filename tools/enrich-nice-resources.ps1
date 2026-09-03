@@ -49,6 +49,38 @@ if (-not (Test-Path $indexFile)) {
 $index = [System.IO.File]::ReadAllText($indexFile) | ConvertFrom-Json
 $targets = @($index.items | Where-Object { $_.locale -eq 'en' })
 
+# The authoritative types, harvested from the listing's own filter by
+# tools/fetch-nice-resource-types.ps1. Where a slug appears here, this is what the site itself
+# says the resource is, and it overrides everything Resolve-Type can infer from the text.
+# Optional: without the file the script still runs, it just infers more and knows less.
+$typesFile = Join-Path $repoRoot 'catalog\nice-resource-types.json'
+$authoritative = @{}
+$authoritativeAll = @{}
+if (Test-Path $typesFile) {
+  $t = [System.IO.File]::ReadAllText($typesFile) | ConvertFrom-Json
+  foreach ($row in $t.items) {
+    $authoritative[$row.slug] = $row.type
+    $authoritativeAll[$row.slug] = @($row.types)
+  }
+  Write-Host "Authoritative types available for $($authoritative.Count) slugs"
+
+  # The listing is a second source of truth for what EXISTS, not just for types. A few
+  # resources are published in the listing but absent from the sitemap, so indexing from the
+  # sitemap alone quietly misses them. Add any such slug to the fetch set.
+  $known = @{}
+  foreach ($row in $targets) { $known[$row.slug] = $true }
+  $extra = @($t.items | Where-Object { -not $known.ContainsKey($_.slug) } | ForEach-Object {
+    [PSCustomObject]@{
+      slug = $_.slug; title = $_.slug; category = $_.type; locale = 'en'
+      url = "https://www.nice.com/resources/$($_.slug)"; lastmod = ''
+    }
+  })
+  if ($extra.Count) {
+    Write-Host "  plus $($extra.Count) in the listing but missing from the sitemap"
+    $targets = @($targets) + $extra
+  }
+}
+
 # Resume from whatever is already on disk.
 $done = @{}
 if ((Test-Path $outFile) -and -not $Force) {
@@ -128,7 +160,10 @@ function Resolve-Type([string]$breadcrumbTitle, [string]$fullTitle, [string]$des
     if ($probe -match ('\b' + [regex]::Escape($key) + '\b')) { return $typeMap[$key] }
   }
   # Analyst firms are a reliable tell even when the word "report" is absent.
-  if ($probe -match 'peak matrix|magic quadrant|forrester|gartner|\bidc\b|\bisg\b|everest group|frost|omdia|ventana|nucleus|metrigy|quadrant') {
+  # Named analyst research programmes. Recognising "SPARK Matrix" as QKS Group research is not
+  # a guess in the way that calling an untitled page a case study would be, so these are safe
+  # to type even though the word "report" never appears.
+  if ($probe -match 'peak matrix|magic quadrant|forrester|gartner|\bidc\b|\bisg\b|everest group|frost|omdia|ventana|nucleus|metrigy|quadrant|spark matrix|metristar|metrirank|qks group|the forrester wave') {
     return 'Analyst report'
   }
 
@@ -139,10 +174,16 @@ function Resolve-Type([string]$breadcrumbTitle, [string]$fullTitle, [string]$des
     }
   }
 
-  # Honest default. The listing UI does know the type, but it is only reachable through a
-  # client-side filter, and the individual pages carry no og:type, no taxonomy in embedded
-  # JSON and no type badge. Guessing here would put a wrong type on hundreds of records.
+  # Honest default. Guessing here would put a wrong type on hundreds of records. The site's
+  # own answer is harvested separately by tools/fetch-nice-resource-types.ps1 and applied by
+  # Resolve-TypeFor below, which is why this fallback now fires far less often.
   return 'Unknown'
+}
+
+# The site's own answer where there is one, inference only where there is not.
+function Resolve-TypeFor($item, [string]$breadcrumbTitle, [string]$fullTitle, [string]$description) {
+  if ($script:authoritative.ContainsKey($item.slug)) { return $script:authoritative[$item.slug] }
+  Resolve-Type $breadcrumbTitle $fullTitle $description
 }
 
 function Get-Meta([string]$html, [string]$property) {
@@ -164,7 +205,8 @@ function Save-Progress {
     fetched    = (Get-Date).ToString('yyyy-MM-dd')
     count      = $items.Count
     countByType = ($items | Group-Object type | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ type = $_.Name; count = $_.Count } })
-    note       = 'title and description are the real values from each page. type is taken from the JSON-LD breadcrumb prefix where present, then from title keywords, then from analyst firm names. Unknown means the page does not say.'
+    countByTypeSource = ($items | Group-Object typeSource | Sort-Object Count -Descending | ForEach-Object { [ordered]@{ source = $_.Name; count = $_.Count } })
+    note       = 'title and description are the real values from each page. type is the site''s own content type where typeSource is "site", taken from the listing taxonomy; where typeSource is "inferred" it is a keyword guess from the breadcrumb, title or description, because that slug is absent from the listing. types lists every type the site assigns, since a resource can carry more than one.'
     items      = $items
   }
   [System.IO.File]::WriteAllText($script:outFile, ($payload | ConvertTo-Json -Depth 5) + "`n")
@@ -177,7 +219,13 @@ if ($RetypeOnly) {
   foreach ($key in @($done.Keys)) {
     $item = $done[$key]
     # fullTitle is the og:title; title is the breadcrumb where one existed.
-    $item.type = Resolve-Type $item.title $item.fullTitle $item.description
+    $item.type = Resolve-TypeFor $item $item.title $item.fullTitle $item.description
+    $all = if ($authoritativeAll.ContainsKey($item.slug)) { $authoritativeAll[$item.slug] } else { @() }
+    if ($item.PSObject.Properties['types']) { $item.types = $all }
+    else { $item | Add-Member -NotePropertyName types -NotePropertyValue $all }
+    $src = if ($authoritative.ContainsKey($item.slug)) { 'site' } elseif ($item.type -eq 'Unknown') { 'none' } else { 'inferred' }
+    if ($item.PSObject.Properties['typeSource']) { $item.typeSource = $src }
+    else { $item | Add-Member -NotePropertyName typeSource -NotePropertyValue $src }
   }
   Save-Progress
   Write-Host "Retyped $($done.Count) records without re-fetching."
@@ -221,7 +269,9 @@ foreach ($target in $pending) {
       slug        = $target.slug
       title       = if ($breadcrumbTitle) { $breadcrumbTitle } else { $ogTitle }
       fullTitle   = $ogTitle
-      type        = Resolve-Type $breadcrumbTitle $ogTitle $description
+      type        = Resolve-TypeFor $target $breadcrumbTitle $ogTitle $description
+      types       = if ($authoritativeAll.ContainsKey($target.slug)) { $authoritativeAll[$target.slug] } else { @() }
+      typeSource  = if ($authoritative.ContainsKey($target.slug)) { 'site' } else { 'inferred' }
       description = $description
       url         = $target.url
       lastmod     = $target.lastmod
