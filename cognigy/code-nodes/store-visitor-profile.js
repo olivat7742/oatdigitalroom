@@ -113,11 +113,16 @@ const audienceIsProspect = !(isNiceEmployee && forOwnKnowledge);
 // mappable industry it holds the canonical label already, so the question is skipped: asking
 // something we know the answer to is the fastest way to look like a form rather than a guide.
 let crmIndustry = '';
+let crmResolved = false;
 try {
-  if (context && context.crm && typeof context.crm === 'object' && context.crm.industry) {
-    crmIndustry = clean(context.crm.industry);
+  if (context && context.crm && typeof context.crm === 'object') {
+    // Whether the lookup has RUN, which is not the same as whether it found a vertical. A new
+    // lead resolves with no industry at all, and conflating the two made the question wait for
+    // a lookup that had already happened and had nothing to say.
+    crmResolved = true;
+    if (context.crm.industry) { crmIndustry = clean(context.crm.industry); }
   }
-} catch (e) { crmIndustry = ''; }
+} catch (e) { crmIndustry = ''; crmResolved = false; }
 
 if (crmIndustry !== '' && clean(merged.industry) === '') {
   merged.industry = crmIndustry;
@@ -318,7 +323,12 @@ try {
 // action 'offer' touches the stage not at all. Every other action has a side effect, so
 // offering a choice would otherwise disturb whatever the visitor is looking at.
 // Contract: contracts/stage-directive.schema.json
-const askingIndustryNow = nextStep !== null && nextStep.fields.indexOf('industry') !== -1;
+// Whether the CRM lookup still has to happen before this question means anything. Computed
+// here rather than beside the guidance below, because it decides both.
+const crmLookupPending = !complete && audienceIsProspect && !crmResolved && Boolean(lookupWebsite);
+
+const askingIndustryNow =
+  nextStep !== null && nextStep.fields.indexOf('industry') !== -1 && !crmLookupPending;
 if (askingIndustryNow) {
   try {
     actions.output(null, {
@@ -364,10 +374,23 @@ if (audience === 'nice-on-behalf') {
 //      chances, and when it still never fires the question is simply asked, which is the safe
 //      direction to fail: a redundant question costs one tap, a missing lookup costs the
 //      vertical entirely.
-const crmLookupPending = !complete && audienceIsProspect && crmIndustry === '' && Boolean(lookupWebsite);
-const lookupNudge = crmLookupPending
-  ? ' Before you ask it, call OAT_DIGITAL_ROOM_lookup_crm ONCE with crmLookupWebsite as companyWebsite, unless you already called it this conversation. Say nothing about that lookup to the visitor.'
-  : '';
+// The vertical question is the one that must not be asked before the lookup, so when it is
+// next up this spells the sequence out rather than hoping for the right order.
+//
+// A visitor who supplies their whole introduction in one message has everything decided in a
+// single tool call, and at that moment nothing has been looked up. Live, the agent duly asked
+// helioretail.com its industry when the account record already said Retail Trade, which is
+// exactly the form-like behaviour this feature exists to avoid.
+//
+// The question text is still returned either way, so a model that ignores the instruction asks
+// it anyway. A redundant question costs one tap; saying nothing at all is far worse.
+const industryIsNext = nextStep !== null && nextStep.fields.indexOf('industry') !== -1;
+let lookupNudge = '';
+if (crmLookupPending) {
+  lookupNudge = industryIsNext
+    ? ' Do NOT ask this question yet. First call OAT_DIGITAL_ROOM_lookup_crm ONCE with companyWebsite set to crmLookupWebsite, then call OAT_DIGITAL_ROOM_save_visitor_profile again with NO new arguments. That second call tells you whether this question is still needed. Ask it only if it comes back again. Say nothing to the visitor about the lookup itself.'
+    : ' Before you ask it, call OAT_DIGITAL_ROOM_lookup_crm ONCE with crmLookupWebsite as companyWebsite, unless you already called it this conversation. Say nothing about that lookup to the visitor.';
+}
 
 input.result = {
   ok: true,

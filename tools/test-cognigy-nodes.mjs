@@ -99,13 +99,32 @@ console.log('\nstore_visitor_profile: when the vertical is asked')
 {
   const base = { firstName: 'Sam', lastName: 'Reyes', company: 'Quietfield', jobTitle: 'Ops Lead', email: 'sam@quietfield.com', department: 'Ops', interest: 'WFM' }
 
-  const asked = runProfile(base)
-  check('with no CRM answer, the vertical is the next question', asked.result.askingIndustry === true, asked.result.nextQuestion)
-  check('so the introduction is NOT complete yet', asked.result.introductionComplete === false)
+  // PASS ONE: the whole introduction arrives in one message, so everything is decided before
+  // anything has been looked up. The question is queued but must NOT be put yet.
+  const pending = runProfile(base)
+  check('the vertical is what remains', pending.result.nextQuestion.includes('industry'), pending.result.nextQuestion)
+  check('so the introduction is NOT complete yet', pending.result.introductionComplete === false)
+  check('but it is not being asked yet', pending.result.askingIndustry === false)
+  check(
+    'and NO buttons are emitted, so twelve chips do not flash and vanish',
+    !pending.outputs.some((o) => o.data && o.data._showroom),
+    pending.outputs.map((o) => Object.keys(o.data ?? {})),
+  )
+
+  // PASS TWO: the lookup has now run and found nothing useful. A new lead resolves with no
+  // industry at all, and treating that as "not looked up yet" would suppress the question
+  // forever, leaving the visitor a prompt with no buttons.
+  const asked = runProfile(base, { crm: { status: 'new-lead', domain: 'quietfield.com' } })
+  check('once the lookup has run and found nothing, the question IS put', asked.result.askingIndustry === true, asked.result.nextQuestion)
   const offer = asked.outputs.find((o) => o.data && o.data._showroom)
   check('twelve buttons are offered', offer?.data._showroom.cta.length === 12, offer?.data._showroom.cta.length)
   check('as an offer, which leaves the stage alone', offer?.data._showroom.action === 'offer')
   check('every button is label, value and kind', offer?.data._showroom.cta.every((c) => c.label && c.value && c.kind === 'quick_reply'))
+  check(
+    'and the lookup instruction is gone, so it is not ordered twice',
+    !asked.result.guidance.includes('Do NOT ask this question yet'),
+    asked.result.guidance,
+  )
 
   const known = runProfile(base, { crm: { status: 'known', industry: 'Financial' } })
   check('with a CRM answer, it is NOT asked', known.result.askingIndustry === false, known.result.nextQuestion)
@@ -117,6 +136,27 @@ console.log('\nstore_visitor_profile: when the vertical is asked')
   const colleague = runProfile({ ...base, email: 'o@nice.com', niceIntent: 'for my own knowledge' })
   check('a colleague browsing for themselves is never asked', colleague.result.askingIndustry === false, colleague.result.nextQuestion)
   check('and their introduction completes', colleague.result.introductionComplete === true)
+
+  // A whole introduction in one message decides everything in a single tool call, before
+  // anything has been looked up. Observed live: the agent asked helioretail.com its industry
+  // when the account record already said Retail Trade. The guidance now spells out the order.
+  check(
+    'when nothing has been looked up yet, the guidance orders the lookup FIRST',
+    pending.result.guidance.includes('Do NOT ask this question yet') &&
+      pending.result.guidance.includes('lookup_crm') &&
+      pending.result.guidance.includes('save_visitor_profile again'),
+    pending.result.guidance,
+  )
+  check(
+    'and still returns the question, so a model that ignores it asks rather than stalls',
+    typeof pending.result.nextQuestion === 'string' && pending.result.nextQuestion.length > 0,
+    pending.result.nextQuestion,
+  )
+  check(
+    'once CRM HAS answered there is no lookup instruction left',
+    !known.result.guidance.includes('Do NOT ask this question yet'),
+    known.result.guidance,
+  )
 }
 
 console.log('\nstore_visitor_profile: recording the answer')
