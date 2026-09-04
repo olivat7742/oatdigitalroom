@@ -190,8 +190,8 @@ up and neither message is shown.
 **Today this runs entirely on invented fixtures in `app/src/crm.ts`, and that is deliberate.**
 
 Pointing it at the real Salesforce org would change its risk profile completely, and the design
-below must be in place first. The org in question is NiCE production: roughly 250,000 accounts,
-real customer names, real employee names.
+below must be in place first. The org in question is NiCE production: real customer names and
+real employee names, across the whole account base.
 
 The problem is that the Digital Room is **unauthenticated and the identity is self-declared**.
 Nothing stops someone typing a competitor's domain. A live lookup would then answer two

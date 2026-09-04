@@ -18,7 +18,8 @@
 
 import type { InboundMessage } from '@/transport/types'
 import { toStageAsset } from '@/catalog'
-import type { StageAsset } from '@/types/stageDirective'
+import type { Cta, StageAsset } from '@/types/stageDirective'
+import { INDUSTRIES } from '@/industries'
 import { placeholderImage } from '@/placeholder'
 
 /** Fails loudly at module load if a fixture drifts away from the catalog. */
@@ -83,6 +84,14 @@ export interface OnboardingStep {
   /** Profile keys this answer fills. */
   fields: string[]
   question: string
+  /**
+   * Buttons offered with the question, for the questions that have a closed set of answers.
+   *
+   * Absent on the open questions, which is most of them: offering buttons for "what is your
+   * name" would be absurd, and offering them for "what are you looking at" would narrow the
+   * one answer the whole session is steered by.
+   */
+  cta?: Cta[]
 }
 
 export const ONBOARDING: OnboardingStep[] = [
@@ -122,6 +131,35 @@ export const NICE_ON_BEHALF_BRANCH: OnboardingStep[] = [
     fields: ['onBehalfOfCompany', 'onBehalfOfWebsite'],
     question:
       'Which company is it for? Their website is the most useful part, since company names repeat across countries and I would rather not match the wrong account.',
+  },
+]
+
+/**
+ * The vertical question, asked ONLY when CRM could not answer it.
+ *
+ * The decision is made as soon as the company is identified, which is the email for a visitor
+ * and the website for a NiCE employee preparing for someone else. Asking a question we already
+ * know the answer to is the fastest way to look like a form rather than a guide.
+ *
+ * The question itself goes LAST in the introduction, not at the point of that decision. In the
+ * live agent the lookup is a separate tool call the model has to make, so this gives it room to
+ * land before the answer is needed. See MockTransport.branchAfter.
+ *
+ * All twelve are offered rather than a shortlist. A shortlist would be us guessing which
+ * vertical the visitor is in, which is the exact mistake the normaliser exists to avoid. There
+ * is no "none of these" button because the composer is always there and the question says so;
+ * a thirteenth chip would also push the list past the contract's limit.
+ */
+export const INDUSTRY_BRANCH: OnboardingStep[] = [
+  {
+    fields: ['industry'],
+    question:
+      'Which of these is closest to your industry? It is the single biggest factor in which customer stories I put in front of you. If none of them fit, just say so and I will leave it out.',
+    cta: INDUSTRIES.map((industry) => ({
+      label: industry.label,
+      value: industry.label,
+      kind: 'quick_reply' as const,
+    })),
   },
 ]
 

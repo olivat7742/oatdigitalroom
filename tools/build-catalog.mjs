@@ -620,6 +620,69 @@ function referencesFor(products) {
   return out.slice(0, 3)
 }
 
+/**
+ * Industry tags, normalised to the twelve in catalog/industries.json.
+ *
+ * The catalog previously carried two incompatible schemes: hand-curated videos used lowercase
+ * free text ("insurance", "financial services", "banking") while the nice.com documents carried
+ * NiCE's taxonomy ("Financial", "Government"). So Financial, financial services and banking
+ * were three labels for one vertical, and a visitor matched to Financial would have seen a
+ * third of what the room actually holds.
+ *
+ * Unmapped tags are DROPPED and reported rather than passed through. Keeping them would rebuild
+ * the fragmentation this exists to remove, and silently dropping them would hide real content
+ * from a vertical nobody notices is missing.
+ */
+function loadIndustryRules() {
+  const p = path.join(repoRoot, 'catalog', 'industries.json')
+  const raw = JSON.parse(fs.readFileSync(p, 'utf8'))
+  const junk = new Set(raw.junk.values)
+  const overrides = raw.exactOverrides
+  const clean = (v) =>
+    String(v)
+      .replace(/[​-‍﻿­]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase()
+
+  return function normalise(value) {
+    const key = clean(value)
+    if (!key || junk.has(key)) return null
+    if (Object.prototype.hasOwnProperty.call(overrides, key)) {
+      const slug = overrides[key]
+      const hit = raw.industries.find((i) => i.slug === slug)
+      return hit ? hit.label : null
+    }
+    for (const rule of raw.industries) {
+      if (rule.aliases.some((a) => key.includes(a))) return rule.label
+    }
+    return null
+  }
+}
+const normaliseIndustry = loadIndustryRules()
+const droppedIndustries = new Map()
+
+function canonicalIndustries(values, assetId) {
+  const out = []
+  for (const value of values ?? []) {
+    const label = normaliseIndustry(value)
+    if (!label) {
+      const seen = droppedIndustries.get(value) ?? []
+      seen.push(assetId)
+      droppedIndustries.set(value, seen)
+      continue
+    }
+    if (!out.includes(label)) out.push(label)
+  }
+  return out
+}
+
+/** Spreadable, so an asset with no mappable tag simply has no industries key. */
+function industriesField(values, assetId) {
+  const tags = canonicalIndustries(values, assetId)
+  return tags.length > 0 ? { industries: tags } : {}
+}
+
 const MIME_EXT = new Set(['.mp4', '.mov', '.m4v', '.webm'])
 
 function readExisting() {
@@ -693,8 +756,7 @@ for (const name of files) {
     useCases: meta.useCases,
     personas: meta.personas,
     depth: meta.depth,
-    ...(meta.industries ? { industries: meta.industries } : {}),
-    ...(prior.industries && !meta.industries ? { industries: prior.industries } : {}),
+    ...industriesField(meta.industries ?? prior.industries, meta.id),
     // Prior wins: a hand-corrected duration should survive regeneration.
     durationSeconds: prior.durationSeconds ?? DURATIONS[name] ?? null,
     source: {
@@ -769,7 +831,7 @@ if (youtube?.videos?.length) {
       useCases: meta.useCases,
       personas: meta.personas,
       depth: meta.depth,
-      ...(meta.industries ? { industries: meta.industries } : {}),
+      ...industriesField(meta.industries, meta.id),
       durationSeconds: video.lengthSeconds ?? undefined,
       source: {
         provider: 'youtube',
@@ -859,7 +921,9 @@ if (curation?.documents?.length) {
       useCases: doc.useCases,
       personas: doc.personas,
       depth: doc.depth,
-      ...(resource.industries?.length ? { industries: resource.industries } : {}),
+      // Already NiCE's taxonomy, but run through the same gate so there is one path in and
+      // one vocabulary out, whichever source an asset came from.
+      ...industriesField(resource.industries, doc.slug),
       source: {
         provider: 'nice-web',
         url: resource.url,
@@ -938,6 +1002,18 @@ if (ytSkipped.length) {
   for (const s of ytSkipped) console.log(`  - ${s}`)
 }
 console.log(`\nDocuments: ${assets.filter((a) => a.type === 'document').length} of ${curation?.documents?.length ?? 0} curated`)
+
+const tagged = assets.filter((a) => a.industries?.length).length
+console.log(`Industry tags: ${tagged} assets carry one of the twelve canonical verticals`)
+if (droppedIndustries.size > 0) {
+  // Reported, never silent. Each of these is real content that no vertical shortcut will now
+  // reach, so it is a decision for a person: add the vertical to catalog/industries.json, or
+  // retag the asset.
+  console.log('\nIndustry tags dropped, no canonical vertical:')
+  for (const [value, ids] of [...droppedIndustries].sort()) {
+    console.log(`  - "${value}"  on ${ids.length} asset(s): ${[...new Set(ids)].slice(0, 3).join(', ')}`)
+  }
+}
 if (warnings.length) {
   console.log('\nWarnings:')
   for (const w of warnings) console.log(`  ! ${w}`)

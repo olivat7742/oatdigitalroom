@@ -5,3 +5,6 @@ dist/
 .env
 .env.*
 !.env.example
+# .env.mock is NOT excepted here. It holds one line and no secret, but the pre-commit hook
+# blocks every .env file on principle and that guard is worth more than the convenience of
+# committing this one. See app/README.md for the line that recreates it.

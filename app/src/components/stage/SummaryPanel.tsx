@@ -20,11 +20,15 @@ import { brand } from '@/theme'
  * The closing screen: what they watched, what they might want next, and how to carry on with a
  * human.
  *
+ * Rendered inside TakeawaysTray, which owns the header, the close button and the scrolling. It
+ * is the expanded tray's content once the agent has produced a summary; before that the tray
+ * shows the live view it builds itself.
+ *
  * Two things this deliberately does NOT do:
  *
- *  - It does not end the conversation. The chat rail stays live, and any later demo replaces
- *    this panel. Someone who says "bye" and then thinks of one more question should not have
- *    to start again.
+ *  - It does not end the conversation. The chat rail stays live, the stage keeps whatever was
+ *    on it behind the tray, and the panel can be closed. Someone who says "bye" and then thinks
+ *    of one more question should not have to start again.
  *  - It does not treat a captured email as permission to send one. The address was given so
  *    the visitor could be followed up if they asked; using it because we have it would be a
  *    different purpose from the one they were told. The opt-in below IS the consent, which is
@@ -70,8 +74,11 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
         ? selectedLabels.join(', ')
         : `${selectedLabels.slice(0, 5).join(', ')} and ${selectedLabels.length - 5} more`
 
+  // No height or scrolling of its own. It renders inside the takeaways tray, which owns the
+  // scroll container; a nested 100%-height scroller inside it produced a panel that either
+  // collapsed to nothing or scrolled independently of its own header.
   return (
-    <Box sx={{ height: '100%', minHeight: 0, overflowY: 'auto', pr: 0.5 }}>
+    <Box>
       <Stack spacing={2.5} sx={{ maxWidth: 620 }}>
         <Box>
           <Typography variant="h5" sx={{ color: brand.black }}>

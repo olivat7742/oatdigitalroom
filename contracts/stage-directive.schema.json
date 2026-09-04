@@ -185,8 +185,8 @@
         },
         "cta": {
           "type": "array",
-          "description": "Suggested next actions rendered as buttons. Selecting one sends its value back to the agent as user input.",
-          "maxItems": 4,
+          "description": "Suggested next actions rendered as buttons. Selecting one sends its value back to the agent as user input.\n\nKeep it to three or four for a conversational follow-up: more than that stops reading as a suggestion and starts reading as a form. The higher limit exists for the one case that is genuinely a closed list rather than a suggestion, the twelve industries in catalog/industries.json, where any shortlist would be us guessing which vertical the visitor is in.",
+          "maxItems": 12,
           "items": {
             "type": "object",
             "required": ["label", "value", "kind"],

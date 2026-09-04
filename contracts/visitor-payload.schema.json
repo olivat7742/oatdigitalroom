@@ -46,6 +46,15 @@
             "website": { "type": "string", "description": "The identifying signal, for the same reason as website above." }
           }
         },
+        "industry": {
+          "type": "string",
+          "description": "The visitor's vertical, as one of the twelve labels in catalog/industries.json. Never a raw CRM string: Salesforce Industry holds well over a thousand distinct values in practice, so it is normalised at the boundary. Absent means we genuinely do not know, which is a normal outcome rather than an error."
+        },
+        "industrySource": {
+          "type": "string",
+          "enum": ["crm", "asked"],
+          "description": "Where the vertical came from. crm means an account record answered; asked means CRM could not and the visitor chose from the buttons. Recorded for the same reason as typeSource on documents: a caller cannot otherwise tell a looked-up fact from a self-reported one, and they deserve different trust."
+        },
         "introductionComplete": {
           "type": "boolean",
           "description": "True once the introduction questions are answered. The count varies: an external visitor answers five, a NiCE employee answers more, because the branch asking who they are preparing for is only reachable for them."

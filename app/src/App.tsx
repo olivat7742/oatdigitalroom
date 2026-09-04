@@ -9,6 +9,7 @@ import { useSessionStore } from '@/store/useSessionStore'
 import { MockTransport } from '@/transport/MockTransport'
 import { CognigyTransport } from '@/transport/CognigyTransport'
 import { Stage } from '@/components/stage/Stage'
+import { TakeawaysTray } from '@/components/stage/TakeawaysTray'
 import { ChatRail } from '@/components/chat/ChatRail'
 import { CompanyBadge } from '@/components/CompanyBadge'
 import { brand } from '@/theme'
@@ -125,7 +126,23 @@ export function App() {
           gridTemplateRows: stacked ? 'minmax(0, 1.1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)',
         }}
       >
-        <Stage />
+        {/* The stage column, not just the stage: the takeaways strip sits under it and the
+            expanded panel covers the whole column, which is what position: relative anchors. */}
+        <Box
+          sx={{
+            position: 'relative',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+          }}
+        >
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <Stage />
+          </Box>
+          <TakeawaysTray />
+        </Box>
+
         <ChatRail />
       </Box>
     </Stack>

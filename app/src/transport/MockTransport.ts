@@ -2,6 +2,7 @@
 import {
   FALLBACK,
   GREETING,
+  INDUSTRY_BRANCH,
   NICE_EMPLOYEE_BRANCH,
   NICE_ON_BEHALF_BRANCH,
   ONBOARDING,
@@ -11,6 +12,7 @@ import {
 } from '@/fixtures/conversation'
 import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
 import { isNiceEmployee, lookupCrm, type CrmLookupResult } from '@/crm'
+import { industryByLabel } from '@/industries'
 import type { Cta, StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
 
 /**
@@ -137,6 +139,13 @@ export class MockTransport implements Transport {
   private crm: CrmLookupResult = { status: 'skipped' }
 
   /**
+   * Whether the lookup has already run. Not inferable from this.crm, because "skipped" is a
+   * legitimate resolved answer for a NiCE employee browsing for their own knowledge, and is
+   * also the starting value.
+   */
+  private crmResolved = false
+
+  /**
    * Assets actually put on the stage, in order, deduplicated.
    *
    * Recorded from the outgoing directives rather than from the matcher, so every path that
@@ -231,6 +240,9 @@ export class MockTransport implements Transport {
       } else {
         for (const field of step.fields) this.visitor[field] = value
       }
+      // The one answer that is not stored verbatim. It has to land on the canonical vocabulary
+      // or not at all, because everything downstream keys on the label.
+      if (step.fields.includes('industry')) this.recordAskedIndustry(value)
     }
     // Branches are inserted AFTER the answer is recorded and BEFORE the index advances, so the
     // new questions land immediately after the one that triggered them rather than at the end.
@@ -239,7 +251,20 @@ export class MockTransport implements Transport {
 
     const next = this.plan[this.onboardingStep]
     if (next) {
-      return [{ delayMs: 550, message: { text: next.question, data: this.visitorPayload(false) } }]
+      return [
+        {
+          delayMs: 550,
+          message: {
+            text: next.question,
+            data: {
+              ...this.visitorPayload(false),
+              // 'offer' rather than 'clear': a question with buttons must not blank whatever
+              // the visitor is looking at just to offer them a choice.
+              ...(next.cta ? { _showroom: { v: 1, action: 'offer', cta: next.cta } } : {}),
+            },
+          },
+        },
+      ]
     }
 
     return this.introductionComplete()
@@ -275,7 +300,65 @@ export class MockTransport implements Transport {
         this.visitor['audience'] = 'nice-on-behalf'
         insert(NICE_ON_BEHALF_BRANCH)
       }
+      return
     }
+
+    // The company is identified as of this answer: the email for a visitor, the website for a
+    // colleague preparing on someone else's behalf. This is the earliest the lookup can run,
+    // and running it here rather than at wrap-up is the whole point: it lets the vertical
+    // question be skipped entirely when the account record already answers it.
+    //
+    // A NiCE employee never reaches this line at the email step, because that branch returns
+    // above. Nothing is searched for them and nothing is asked, which is correct: a colleague
+    // browsing for their own knowledge has no vertical relevant to what we show.
+    if (step.fields.includes('email') || step.fields.includes('onBehalfOfWebsite')) {
+      this.resolveCrm()
+      // Appended to the END of the introduction rather than spliced in here, even though this
+      // is where the decision is made. The live agent's lookup is a separate tool call the
+      // model has to make, so putting the question last gives that call two questions' worth of
+      // room to land before the answer is needed. The two implementations have to ask the same
+      // questions in the same order or the public build misrepresents how the real thing opens.
+      if (!this.visitor['industry']) this.plan.push(...INDUSTRY_BRANCH)
+    }
+  }
+
+  /**
+   * Runs the CRM lookup once and keeps what it says about the vertical.
+   *
+   * Idempotent because two paths reach it: the identifying answer during the introduction, and
+   * the close of the introduction for the visitors that path never fires for.
+   */
+  private resolveCrm(): void {
+    if (this.crmResolved) return
+    this.crmResolved = true
+    this.crm = this.runCrmLookup()
+
+    // Recorded as the canonical label, never the raw CRM string. Marked 'crm' so a reader can
+    // tell a looked-up vertical from one the visitor chose themselves, which deserve different
+    // trust: one came from an account record, the other from a stranger picking a button.
+    if (this.crm.industry) {
+      this.visitor['industry'] = this.crm.industry.label
+      this.visitor['industrySource'] = 'crm'
+    }
+  }
+
+  /**
+   * Records the vertical the visitor picked, or records nothing.
+   *
+   * Passed through the same normaliser as a CRM value, so a typed "we're a bank" lands on
+   * Financial and an unmapped answer such as "manufacturing" is left absent rather than forced
+   * into the nearest-looking box. Absent is a normal outcome here: the question invites the
+   * visitor to say none of them fit.
+   */
+  private recordAskedIndustry(answer: string): void {
+    const industry = industryByLabel(answer)
+    if (industry) {
+      this.visitor['industry'] = industry.label
+      this.visitor['industrySource'] = 'asked'
+      return
+    }
+    delete this.visitor['industry']
+    delete this.visitor['industrySource']
   }
 
   /**
@@ -362,9 +445,16 @@ export class MockTransport implements Transport {
     const department = this.visitor['department'] ?? ''
     const name = (this.visitor['firstName'] ?? '').split(/\s+/)[0] ?? ''
 
-    this.crm = this.runCrmLookup()
+    // Normally already resolved, at the answer that identified the company. Called again for
+    // the paths that answer never fires for, notably a NiCE employee browsing for themselves.
+    this.resolveCrm()
 
-    const matches = searchCatalog(`${interest} ${department}`.trim(), 3)
+    // The vertical is part of the query, not a filter. Industries are an identifying field in
+    // the scoring, so a known vertical lifts same-industry assets without excluding a strong
+    // match from another one, which a filter would. It is also the promise the question made:
+    // that saying which industry you are in changes what you get shown.
+    const industry = this.visitor['industry'] ?? ''
+    const matches = searchCatalog(`${interest} ${department} ${industry}`.trim(), 3)
     const suggestions = matches.length > 0 ? matches : searchCatalog('agent supervisor outbound', 3)
 
     const lead = name ? `Thanks, ${name}.` : 'Thanks.'
@@ -463,8 +553,8 @@ export class MockTransport implements Transport {
         message: {
           text:
             this.viewed.length > 0
-              ? 'I have put a short summary on the left. Tick whatever you would like to go further on, and tell me how you would like to follow up.'
-              : 'Thanks for stopping by. There is a summary on the left if you would like documentation or to speak with someone.',
+              ? 'Your takeaways are open now. Tick whatever you would like to go further on, and tell me how you would like to follow up.'
+              : 'Thanks for stopping by. Your takeaways are open if you would like documentation or to speak with someone.',
           data: { _showroom: { v: 1, action: 'wrapup', summary, cta: [] } },
         },
       },

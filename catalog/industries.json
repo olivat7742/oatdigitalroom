@@ -1,0 +1,109 @@
+{
+  "notes": "The ONE industry vocabulary for the Digital Room, plus the rules for mapping a messy CRM value onto it. Read by app/src/industries.ts, by tools/build-catalog.mjs when tagging assets, and by the Cognigy lookup_crm tool, so the portal and the live agent can never disagree about which vertical a visitor is in.",
+  "why": "Salesforce Industry is not a picklist in practice: across a large account base the field holds well over a thousand distinct values. The same vertical appears as 'Financial Services', 'Finance and Insurance', 'Banks', 'Banking', 'Finance' and 'Banks & Credit Cards'; healthcare appears four ways. Several values also carry an invisible zero-width character, so 'Healthcare' and 'Healthcare\\u200b' are different strings to a computer and identical to a human. Matching raw values would silently miss a large share of accounts, so everything is normalised at the boundary instead.",
+  "canonical": "The twelve industries NiCE itself filters by on nice.com/resources. Authoritative, already carried by the 27 curated documents, and the slug deep-links to NiCE's own filtered listing: https://www.nice.com/resources?industries=<slug>",
+  "deliberatelyPartial": "Big Salesforce industries with no NiCE vertical (Manufacturing, Computer Services/Consulting beyond Technology, Professional Services, Construction/Real Estate, Transportation and Warehousing) are NOT forced into the nearest-looking box. They return null, which makes the room ask the visitor instead. A wrong vertical is worse than no vertical: it puts the wrong customer story in front of them.",
+  "version": "1.0.0",
+
+  "industries": [
+    {
+      "slug": "insurance",
+      "label": "Insurance",
+      "aliases": ["insurance", "insurer", "underwriting", "underwriter", "claims management", "insurtech"]
+    },
+    {
+      "slug": "financial",
+      "label": "Financial",
+      "aliases": ["financial service", "financial", "finance", "bank", "banking", "credit union", "credit card", "brokerage", "securities", "asset mgt", "asset management", "capital markets", "mortgage", "lending", "collections", "payments", "fintech", "wealth management"]
+    },
+    {
+      "slug": "healthcare",
+      "label": "Healthcare",
+      "aliases": ["healthcare", "health care", "health service", "health system", "hospital", "medical", "payer", "provider network", "life sciences", "pharmaceutical"]
+    },
+    {
+      "slug": "retail",
+      "label": "Retail",
+      "aliases": ["retail", "retailing", "retail trade", "ecommerce", "e-commerce", "consumer goods", "grocery", "supermarket", "apparel", "merchandis"]
+    },
+    {
+      "slug": "telecom",
+      "label": "Telecom",
+      "aliases": ["telco", "telecom", "telecommunication", "mobile operator", "broadband", "cable", "internet service provider", "wireless carrier"]
+    },
+    {
+      "slug": "utilities",
+      "label": "Utilities",
+      "aliases": ["utilities", "utility", "energy", "electric", "power generation", "natural gas", "water", "waste"]
+    },
+    {
+      "slug": "government",
+      "label": "Government",
+      "aliases": ["government", "public administration", "public sector", "municipal", "federal agency", "defence", "defense", "citizen service"]
+    },
+    {
+      "slug": "education",
+      "label": "Education",
+      "aliases": ["education", "educational", "university", "higher education", "school", "academic", "student service"]
+    },
+    {
+      "slug": "bpo",
+      "label": "BPO",
+      "aliases": ["bpo", "call center", "call centre", "contact center outsourc", "outsourc", "business process"]
+    },
+    {
+      "slug": "technology",
+      "label": "Technology",
+      "aliases": ["technology", "software", "it services", "computer service", "saas", "information technology", "electronics", "hardware", "cloud service"]
+    },
+    {
+      "slug": "travel-hospitality",
+      "label": "Travel & Hospitality",
+      "aliases": ["travel", "hospitality", "airline", "airport", "hotel", "accommodation", "restaurant", "food service", "tourism", "leisure", "cruise", "railway", "rail operator"]
+    },
+    {
+      "slug": "automotive",
+      "label": "Automotive",
+      "aliases": ["automotive", "automobile", "car dealer", "vehicle", "motor"]
+    }
+  ],
+
+  "exactOverrides": {
+    "_why": "Values whose keywords point two ways at once, or whose wording matches nothing useful. Applied BEFORE the alias rules, so they win. 'Finance and Insurance' is the important one: it is a census-style bucket containing both, and alias order alone would send every bank in it to Insurance.",
+    "finance and insurance": "financial",
+    "banks & credit cards": "financial",
+    "brokerage/securities/asset mgt": "financial",
+    "health care and social assistance": "healthcare",
+    "retail trade": "retail",
+    "educational services": "education",
+    "government & public administration": "government",
+    "call center / bpo": "bpo",
+    "computer services/consulting": "technology",
+    "technology hardware & equipment": "technology",
+    "software & it services": "technology",
+    "travel and hospitality": "travel-hospitality",
+    "accommodation and food services": "travel-hospitality",
+    "restaurants and bars": "travel-hospitality",
+    "entertainment and media": null,
+    "transportation and warehousing": null,
+    "transportation": null,
+    "distribution and wholesale": null,
+    "professional services": null,
+    "business services": null,
+    "commercial services": null,
+    "construction/real estate": null,
+    "construction": null,
+    "real estate rental and leasing": null,
+    "manufacturing": null,
+    "chemicals": null,
+    "agriculture, forestry, fishing and hunting": null,
+    "not-for-profit services": null,
+    "not for profit": null,
+    "information": null
+  },
+
+  "junk": {
+    "_why": "Values that exist but say nothing. A large share of accounts sit here. Treated as no answer, which is what makes the fallback question a normal path rather than an edge case.",
+    "values": ["other", "others", "other services", "unknown", "unknown/not sure", "not sure", "n/a", "na", "none", "undefined", "null", "tbd", "misc", "miscellaneous"]
+  }
+}

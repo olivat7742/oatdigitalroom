@@ -140,10 +140,22 @@ try {
   const introDone = (visitor, label) =>
     check(`${label}: introduction completed`, visitor?.introductionComplete === true, visitor)
 
+  /**
+   * Whether the vertical question was asked.
+   *
+   * It must be asked ONLY when the CRM record could not answer it, so both the presence and
+   * the absence are assertions. Matched on the question text rather than on a field count,
+   * because the whole point of the branch is which question the visitor is shown.
+   */
+  const askedIndustry = (messages) =>
+    messages.some((m) => (m.text ?? '').includes('closest to your industry'))
+
   // Choices must arrive as BUTTONS, not only as a list in the prose. The screenshot that
   // prompted this showed three options typed into the message with nothing to click.
   console.log('\nquick-reply buttons')
   {
+    // Vantage Bank's CRM industry is "Finance and Insurance", which normalises, so this
+    // visitor is NOT asked the vertical question and answers the five original questions.
     const { messages } = await converse(MockTransport, [
       'Camille Dubois',
       'Vantage Bank, Head of Workforce Planning',
@@ -189,37 +201,79 @@ try {
 
   console.log('\nconversation: external visitor at a KNOWN account')
   {
-    const { summary, visitor } = await converse(MockTransport, [
+    // Northwind's CRM industry is "Transportation and Warehousing", which has no NiCE vertical
+    // and deliberately maps to nothing, so this visitor IS asked. They decline, which is the
+    // honest answer for a logistics company, and the vertical must then stay absent rather
+    // than being forced into the nearest-looking box.
+    const { summary, visitor, messages } = await converse(MockTransport, [
       'Dana Whitfield',
       'Northwind Logistics, Head of Service',
       'dana@northwindlogistics.com',
       'Customer service',
       'AI agents for support',
+      'None of these, we are logistics',
     ])
     introDone(visitor, 'known account')
     check('summary carries a crm block', Boolean(summary?.crm), summary?.crm)
     check('status is known', summary?.crm?.status === 'known', summary?.crm)
     check('the right rep is named', summary?.crm?.salesRepName === 'Camille Fournier', summary?.crm)
     check('match type is carried', summary?.crm?.matchType === 'opportunity', summary?.crm)
+    check('an unmapped CRM industry still asks the visitor', askedIndustry(messages) === true)
+    check('a declined answer leaves NO vertical', visitor?.industry === undefined, visitor?.industry)
+    check(
+      'and records no source either, so nothing reads as looked up',
+      visitor?.industrySource === undefined,
+      visitor?.industrySource,
+    )
   }
 
   console.log('\nconversation: external visitor at an UNKNOWN company')
   {
-    const { summary, visitor } = await converse(MockTransport, [
+    // No CRM record at all, so nothing can answer the vertical and the question is asked. This
+    // visitor taps one of the twelve buttons, which is the ordinary path for a new lead.
+    const { summary, visitor, messages } = await converse(MockTransport, [
       'Sam Reyes',
       'Quietfield Insurance, Operations Lead',
       'sam@quietfield-insurance-example.com',
       'Operations',
       'Workforce management',
+      'Insurance',
     ])
     introDone(visitor, 'new lead')
     check('status is new-lead', summary?.crm?.status === 'new-lead', summary?.crm)
     check('NO rep is named', summary?.crm?.salesRepName === undefined, summary?.crm)
+    check('a new lead is asked the vertical', askedIndustry(messages) === true)
+    check('the tapped vertical is recorded', visitor?.industry === 'Insurance', visitor?.industry)
+    check(
+      'marked as self-reported, not looked up',
+      visitor?.industrySource === 'asked',
+      visitor?.industrySource,
+    )
+  }
+
+  console.log('\nconversation: the vertical came from CRM, so it is not asked')
+  {
+    const { visitor, messages } = await converse(MockTransport, [
+      'Priya Raman',
+      'Helio Retail Group, Head of Care',
+      'priya@helioretail.com',
+      'Customer care',
+      'Self service',
+    ])
+    introDone(visitor, 'crm vertical')
+    // "Retail Trade" in the fixture, which is an exact override rather than an alias hit.
+    check('normalised to the canonical label', visitor?.industry === 'Retail', visitor?.industry)
+    check('marked as looked up', visitor?.industrySource === 'crm', visitor?.industrySource)
+    check(
+      'and the question is NOT asked',
+      askedIndustry(messages) === false,
+      messages.map((m) => m.text),
+    )
   }
 
   console.log('\nconversation: NiCE employee, own knowledge')
   {
-    const { summary, visitor } = await converse(MockTransport, [
+    const { summary, visitor, messages } = await converse(MockTransport, [
       'Olivier Attia',
       'NiCE, Solutions Engineer',
       'olivier.attia@nice.com',
@@ -230,11 +284,16 @@ try {
     introDone(visitor, 'nice internal')
     check('audience is nice-internal', visitor?.audience === 'nice-internal', visitor?.audience)
     check('NO crm block at all', summary?.crm === undefined, summary?.crm)
+    // Nothing is searched for a colleague, so nothing can be found, and yet they must still not
+    // be asked: a NiCE employee browsing for their own knowledge has no vertical that changes
+    // what is worth showing them. This is the one case where absent must not trigger the ask.
+    check('a colleague is NOT asked the vertical', askedIndustry(messages) === false)
+    check('and carries no vertical', visitor?.industry === undefined, visitor?.industry)
   }
 
   console.log('\nconversation: NiCE employee preparing for a customer')
   {
-    const { summary, visitor } = await converse(MockTransport, [
+    const { summary, visitor, messages } = await converse(MockTransport, [
       'Olivier Attia',
       'NiCE, Solutions Engineer',
       'olivier.attia@nice.com',
@@ -252,6 +311,10 @@ try {
       summary?.crm,
     )
     check('account name is the customer', summary?.crm?.accountName === 'Vantage Bank', summary?.crm)
+    // The vertical must follow the CUSTOMER's record too, not the colleague's own employer.
+    check('vertical came from the customer record', visitor?.industry === 'Financial', visitor?.industry)
+    check('marked as looked up', visitor?.industrySource === 'crm', visitor?.industrySource)
+    check('so the question is not asked', askedIndustry(messages) === false)
   }
 } finally {
   await server.close()

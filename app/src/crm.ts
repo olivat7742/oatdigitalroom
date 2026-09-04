@@ -8,9 +8,9 @@
  * ---------------------------------------------------------------------------------------
  * THE DATA HERE IS INVENTED. IT MUST STAY INVENTED.
  *
- * The live Salesforce org this would eventually query is NiCE's production CRM: roughly
- * 250,000 accounts, real customer names, real employee names. None of that belongs in a
- * public GitHub repository, so every company and every representative below is fictional.
+ * The live Salesforce org this would eventually query is NiCE's production CRM: real customer
+ * names, real employee names, at scale. None of that belongs in a public GitHub repository, so
+ * every company and every representative below is fictional.
  * If you wire this to the real org, the lookup moves server-side and this file keeps its
  * fixtures for mock mode. Do not paste real query results in here.
  * ---------------------------------------------------------------------------------------
@@ -24,6 +24,7 @@
  */
 
 import { resolveCompanyDomain } from '@/company'
+import { normaliseIndustry, type Industry } from '@/industries'
 import fixtures from '@catalog/crm-fixtures.json'
 
 /**
@@ -51,6 +52,14 @@ export interface CrmLookupResult {
   salesRep?: CrmSalesRep
   /** The domain the lookup was keyed on, so the decision is auditable rather than magic. */
   domain?: string
+  /**
+   * The account's vertical, normalised to one of the twelve.
+   *
+   * Absent whenever CRM cannot answer usefully, which is common: the field holds over a
+   * thousand distinct values, a large share of accounts say only "Other", and industries with
+   * no NiCE vertical are deliberately left unmapped. Absent means ask the visitor, never guess.
+   */
+  industry?: Industry
 }
 
 /**
@@ -117,7 +126,12 @@ export function lookupCrm(input: { email?: string; website?: string }): CrmLooku
   const hit = FIXTURES[domain]
   if (!hit) return { status: 'new-lead', domain }
 
-  return { status: 'known', domain, ...hit }
+  // rawIndustry is the CRM value verbatim, normalised here rather than stored pre-cleaned, so
+  // that swapping the fixture for a live Salesforce read changes nothing downstream.
+  const { rawIndustry, ...account } = hit as typeof hit & { rawIndustry?: string }
+  const industry = normaliseIndustry(rawIndustry)
+
+  return { status: 'known', domain, ...account, ...(industry ? { industry } : {}) }
 }
 
 /**

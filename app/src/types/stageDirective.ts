@@ -250,7 +250,9 @@ export function extractDirective(data: unknown): StageDirective | null {
     summary,
     position: typeof envelope['position'] === 'number' ? envelope['position'] : undefined,
     tour: isRecord(envelope['tour']) ? (envelope['tour'] as unknown as TourInfo) : undefined,
-    cta: Array.isArray(envelope['cta']) ? (envelope['cta'] as Cta[]).slice(0, 4) : undefined,
+    // Twelve, not four, only because the industry picker is a closed list of twelve. Three or
+    // four remains the convention for a conversational follow-up; see the contract.
+    cta: Array.isArray(envelope['cta']) ? (envelope['cta'] as Cta[]).slice(0, 12) : undefined,
   }
 }
 

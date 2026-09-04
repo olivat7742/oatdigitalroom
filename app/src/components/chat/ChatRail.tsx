@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Paper from '@mui/material/Paper'
@@ -44,11 +44,46 @@ export function ChatRail() {
   const send = useSessionStore((s) => s.sendVisitorMessage)
 
   const [draft, setDraft] = useState('')
-  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const ctaRef = useRef<HTMLDivElement | null>(null)
+
+  /**
+   * Pins the conversation to the bottom.
+   *
+   * Every detail here is load-bearing, and each one was a version that did not work.
+   *
+   * The industry question offers twelve buttons, and that strip wraps to four rows, taking a
+   * third of the rail. The original smooth scrollIntoView on a trailing element was still
+   * animating when the strip resized under it, so the question those buttons belong to ended up
+   * scrolled out of sight while the buttons stayed visible: twelve options and no prompt.
+   *
+   * So: the container, not a child, because the child's own position moves as the strip grows.
+   * In a rAF, so the read happens after layout. And INSTANT rather than smooth, because a turn
+   * arrives as several state changes in quick succession and each smooth animation cancels the
+   * one before it, landing short. The jump is unnoticeable at the pace messages actually arrive.
+   */
+  const pinToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      const container = scrollRef.current
+      if (!container) return
+      container.scrollTop = container.scrollHeight
+    })
+  }, [])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages, agentTyping, cta])
+    pinToBottom()
+  }, [messages, agentTyping, cta, pinToBottom])
+
+  // The strip's own height changes are not covered by the effect above: cta can stay identical
+  // while the rail is resized and the rows reflow. Re-pinning on its resize keeps the newest
+  // message visible in that case too.
+  useEffect(() => {
+    const strip = ctaRef.current
+    if (!strip || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(pinToBottom)
+    observer.observe(strip)
+    return () => observer.disconnect()
+  }, [cta, pinToBottom])
 
   const submit = (text: string) => {
     const value = text.trim()
@@ -71,7 +106,11 @@ export function ChatRail() {
     >
       {/* overflowX hidden on purpose: citation links used to push the rail sideways rather
           than wrap, which put a horizontal scrollbar under the conversation. */}
-      <Stack spacing={1.75} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', p: 2.5 }}>
+      <Stack
+        ref={scrollRef}
+        spacing={1.75}
+        sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', p: 2.5 }}
+      >
         {messages.length === 0 && connection !== 'open' && (
           <Typography variant="body2" sx={{ color: brand.darkGray }}>
             Connecting to the guide...
@@ -83,11 +122,11 @@ export function ChatRail() {
         ))}
 
         {agentTyping && <TypingIndicator />}
-        <div ref={bottomRef} />
       </Stack>
 
       {cta.length > 0 && (
         <Stack
+          ref={ctaRef}
           direction="row"
           spacing={1}
           sx={{
@@ -98,6 +137,11 @@ export function ChatRail() {
             rowGap: 1,
             borderTop: '1px solid',
             borderColor: brand.hairline,
+            // Most turns offer three or four chips and never reach this. The industry picker
+            // offers twelve, which wraps to several rows in a narrow rail, and without a
+            // ceiling those rows push the conversation itself off the screen.
+            maxHeight: '32vh',
+            overflowY: 'auto',
           }}
         >
           {cta.map((item, index) => {

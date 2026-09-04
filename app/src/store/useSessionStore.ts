@@ -7,6 +7,7 @@ import {
   type StageDirective,
   type StageSummary,
   type TourInfo,
+  type ViewedAsset,
 } from '@/types/stageDirective'
 import type { ConnectionState, InboundMessage, Transport } from '@/transport/types'
 import { DEFAULT_REFERENCES } from '@/references'
@@ -66,11 +67,36 @@ interface SessionState {
   /** Chapter indices already narrated, so a rewind does not repeat the talk track. */
   narratedChapters: Set<string>
 
+  /**
+   * Everything the stage has shown this session, in order, deduplicated.
+   *
+   * Accrued client-side from the directives as they arrive, rather than waiting for the agent's
+   * closing summary. That is what lets the takeaways tray be useful from the first video: the
+   * visitor can see what they have collected at any point without having to end the
+   * conversation to find out.
+   *
+   * Not a replacement for summary.viewed. The agent's version is authoritative at wrap-up and
+   * can include things this cannot know about; this one is simply always available.
+   */
+  seen: ViewedAsset[]
+
+  /** Whether the takeaways tray is expanded. Collapsed is a strip, expanded is the panel. */
+  trayOpen: boolean
+
+  /**
+   * Set when the visitor looks like they are leaving, so the tray strip can offer the takeaways
+   * before they go. Fires at most once a session, and never sends anything on their behalf:
+   * showing them the door is not the same as walking them through it.
+   */
+  wrapUpNudge: boolean
+
   attachTransport: (transport: Transport) => void
   sendVisitorMessage: (text: string) => void
   setStepIndex: (index: number) => void
   setPlaying: (playing: boolean) => void
   enterChapter: (chapterIndex: number) => void
+  setTrayOpen: (open: boolean) => void
+  nudgeWrapUp: () => void
   reset: () => void
 }
 
@@ -105,9 +131,13 @@ export function applyDirective(stage: StageState, directive: StageDirective): St
       return { ...EMPTY_STAGE }
 
     case 'wrapup':
-      // Replaces whatever was playing. The chat keeps running, so this is a change of view,
-      // not the end of the session: any later show or play brings the stage straight back.
-      return { ...EMPTY_STAGE, summary: directive.summary ?? null }
+      // Stops playback and hands the summary to the takeaways tray, which is what renders it.
+      // The asset is deliberately KEPT: the tray is dismissible, and closing it should return
+      // the visitor to what they were looking at rather than to an empty stage.
+      //
+      // The chat keeps running throughout, so this is a change of view, not the end of the
+      // session, and any later show or play brings the stage straight back.
+      return { ...stage, playing: false, summary: directive.summary ?? null }
 
     case 'show':
     case 'play':
@@ -239,6 +269,33 @@ export const useSessionStore = create<SessionState>((set, get) => {
       if (directive) {
         next.stage = applyDirective(state.stage, directive)
 
+        // Collected as it happens, from the directive that put it on the stage. Doing it here
+        // rather than in each transport means every path that shows something is recorded
+        // without having to remember to record it.
+        const shown = directive.asset
+        if (
+          shown &&
+          (directive.action === 'show' || directive.action === 'play') &&
+          !state.seen.some((item) => item.assetId === shown.id)
+        ) {
+          next.seen = [
+            ...state.seen,
+            {
+              assetId: shown.id,
+              title: shown.title ?? shown.id,
+              ...(shown.durationSeconds !== undefined
+                ? { durationSeconds: shown.durationSeconds }
+                : {}),
+              ...(shown.watchUrl ? { watchUrl: shown.watchUrl } : {}),
+              ...(shown.references?.length ? { references: shown.references } : {}),
+            },
+          ]
+        }
+
+        // The takeaways are the point of the wrap-up, so the tray opens itself to show them.
+        // Nothing else opens it: the visitor decides when to look otherwise.
+        if (directive.action === 'wrapup') next.trayOpen = true
+
         // A new asset resets narration tracking, and cta/tour are replaced rather than
         // merged so a stale button from a previous turn can never linger.
         if (directive.action === 'show' || directive.action === 'play' || directive.action === 'clear') {
@@ -267,6 +324,9 @@ export const useSessionStore = create<SessionState>((set, get) => {
     agentTyping: false,
     visitor: null,
     narratedChapters: new Set<string>(),
+    seen: [],
+    trayOpen: false,
+    wrapUpNudge: false,
 
     attachTransport(next: Transport) {
       transport?.disconnect()
@@ -316,6 +376,23 @@ export const useSessionStore = create<SessionState>((set, get) => {
       }))
     },
 
+    setTrayOpen(open: boolean) {
+      // Opening the tray answers the nudge, so it is cleared here rather than left to pulse
+      // behind an already-open panel.
+      set(open ? { trayOpen: true, wrapUpNudge: false } : { trayOpen: false })
+    },
+
+    /**
+     * Called by the leave-intent watcher. Idempotent, and refuses while the tray is already
+     * open or a summary has already been produced: in both cases the visitor has the takeaways
+     * in front of them and a nudge towards them is just noise.
+     */
+    nudgeWrapUp() {
+      const { wrapUpNudge, trayOpen, stage } = get()
+      if (wrapUpNudge || trayOpen || stage.summary) return
+      set({ wrapUpNudge: true })
+    },
+
     reset() {
       set({
         messages: [],
@@ -323,6 +400,9 @@ export const useSessionStore = create<SessionState>((set, get) => {
         cta: [],
         tour: null,
         narratedChapters: new Set<string>(),
+        seen: [],
+        trayOpen: false,
+        wrapUpNudge: false,
       })
     },
   }

@@ -28,6 +28,23 @@ npm run dev
 
 Then open the URL Vite prints, by default `http://localhost:5180`.
 
+### Running mock mode without touching `.env.local`
+
+Once `.env.local` points at a live agent, switching to the fixture flow used to mean editing
+that file and putting it back. It does not, because Vite loads `.env.<mode>` **after**
+`.env.local`, so a mode-specific file wins for the one variable it sets:
+
+```bash
+printf 'VITE_TRANSPORT=mock\n' > app/.env.mock
+```
+```bash
+npx vite app --mode mock --port 5181
+```
+
+`.env.mock` is gitignored and is not in the repo. It holds no secret, but the pre-commit hook
+blocks every `.env` file on principle, and that guard is worth more than committing one line.
+Recreate it with the command above; it takes a second and the hook stays honest.
+
 ## What mock mode is for
 
 Phase 2 of `../docs/build-plan.md` depends on the Cognigy agent, which is not live yet. Mock

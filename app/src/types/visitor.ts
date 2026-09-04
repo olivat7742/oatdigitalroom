@@ -24,10 +24,15 @@ export interface Visitor {
   audience?: 'customer' | 'nice-internal' | 'nice-on-behalf'
   /** Present only for 'nice-on-behalf': the company the NiCE employee is preparing for. */
   onBehalfOf?: { company?: string; website?: string }
+  /** One of the twelve labels in catalog/industries.json. Never a raw CRM string. */
+  industry?: string
+  /** Whether the vertical was looked up or self-reported. See the contract for why. */
+  industrySource?: 'crm' | 'asked'
   introductionComplete?: boolean
 }
 
 const AUDIENCES = ['customer', 'nice-internal', 'nice-on-behalf'] as const
+const INDUSTRY_SOURCES = ['crm', 'asked'] as const
 
 const STRING_FIELDS = [
   'firstName',
@@ -38,6 +43,7 @@ const STRING_FIELDS = [
   'website',
   'department',
   'interest',
+  'industry',
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -78,6 +84,16 @@ export function extractVisitor(data: unknown): Visitor | null {
   const audience = payload['audience']
   if (typeof audience === 'string' && (AUDIENCES as readonly string[]).includes(audience)) {
     visitor.audience = audience as Visitor['audience']
+  }
+
+  // Validated against the enum, like audience: an unknown source would otherwise be treated
+  // as trustworthy by anything that only checks whether the field is present.
+  const industrySource = payload['industrySource']
+  if (
+    typeof industrySource === 'string' &&
+    (INDUSTRY_SOURCES as readonly string[]).includes(industrySource)
+  ) {
+    visitor.industrySource = industrySource as Visitor['industrySource']
   }
 
   const onBehalfOf = payload['onBehalfOf']

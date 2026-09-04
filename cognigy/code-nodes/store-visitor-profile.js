@@ -18,7 +18,25 @@
 
 const CORE_FIELDS = ['firstName', 'lastName', 'company', 'jobTitle', 'email'];
 const EXTRA_FIELDS = ['department', 'interest'];
-const ALL_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website']);
+const ALL_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website', 'industry', 'industrySource']);
+
+// What the model is allowed to SUPPLY, which is not the same as what gets emitted.
+//
+// industrySource is deliberately absent: it records whether the vertical was looked up or
+// self-reported, and it is decided here from which path produced it. Accepting it as an
+// argument would let the model assert that a vertical came from an account record when the
+// visitor simply typed it, and the whole reason the field exists is that those deserve
+// different trust.
+const ARG_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website', 'industry']);
+
+// The twelve verticals NiCE itself filters by, in NiCE's own order.
+//
+// The authority is catalog/industries.json, which lookup_crm FETCHES. Only the labels are
+// duplicated here, and only because this node has no HTTP fetch in front of it, exactly like
+// NICE_DOMAINS and GENERIC_EMAIL_DOMAINS below. The alias and override tables are NOT copied:
+// they exist to interpret messy CRM strings, which is lookup_crm's job. All this node has to
+// recognise is which of the twelve buttons the visitor tapped.
+const INDUSTRY_LABELS = ['Insurance','Financial','Healthcare','Retail','Telecom','Utilities','Government','Education','BPO','Technology','Travel & Hospitality','Automotive'];
 
 // Answers used to steer the introduction but NOT part of the visitor contract. Kept separate
 // because contracts/visitor-payload.schema.json sets additionalProperties false, so emitting
@@ -58,7 +76,7 @@ try {
 } catch (e) { existing = {}; }
 
 const merged = Object.assign({}, existing);
-ALL_FIELDS.concat(WORKING_FIELDS).forEach(function (field) {
+ARG_FIELDS.concat(WORKING_FIELDS).forEach(function (field) {
   const value = clean(args[field]);
   if (value !== '') { merged[field] = value; }
 });
@@ -83,6 +101,71 @@ const intentAnswer = clean(merged.niceIntent).toLowerCase();
 const intentGiven = intentAnswer !== '';
 const forOwnKnowledge = intentGiven && /\b(own|myself|self|my knowledge|personal|learn|learning|curious|curiosity|general|no one|nobody|none)\b/.test(intentAnswer);
 const forCustomer = intentGiven && !forOwnKnowledge;
+
+// Everyone except a colleague exploring for their own knowledge. They are neither a customer
+// nor a lead, nothing is looked up for them, and no vertical changes what is worth showing
+// them, so they are the one visitor who is never asked.
+const audienceIsProspect = !(isNiceEmployee && forOwnKnowledge);
+
+// THE VERTICAL: taken from CRM when CRM can answer, asked when it cannot.
+//
+// context.crm is written by the lookup_crm post-process. When the account record carried a
+// mappable industry it holds the canonical label already, so the question is skipped: asking
+// something we know the answer to is the fastest way to look like a form rather than a guide.
+let crmIndustry = '';
+try {
+  if (context && context.crm && typeof context.crm === 'object' && context.crm.industry) {
+    crmIndustry = clean(context.crm.industry);
+  }
+} catch (e) { crmIndustry = ''; }
+
+if (crmIndustry !== '' && clean(merged.industry) === '') {
+  merged.industry = crmIndustry;
+  merged.industrySource = 'crm';
+}
+
+// Matched against the twelve rather than stored verbatim, because everything downstream keys
+// on the label. Exact match first, then containment so a typed "we're in retail banking"
+// still lands somewhere sensible.
+//
+// No match is a NORMAL outcome, not an error: the question invites the visitor to say none of
+// them fit, and a logistics or manufacturing company genuinely has no NiCE vertical. Recording
+// nothing is the honest result, and better than forcing them into the nearest-looking box.
+function matchIndustry(value) {
+  const answer = clean(value).toLowerCase();
+  if (answer === '') { return null; }
+  for (let i = 0; i < INDUSTRY_LABELS.length; i++) {
+    if (answer === INDUSTRY_LABELS[i].toLowerCase()) { return INDUSTRY_LABELS[i]; }
+  }
+  for (let i = 0; i < INDUSTRY_LABELS.length; i++) {
+    if (answer.indexOf(INDUSTRY_LABELS[i].toLowerCase()) !== -1) { return INDUSTRY_LABELS[i]; }
+  }
+  return null;
+}
+
+// Only re-derived for an ASKED answer. A label already carried over from CRM above is
+// canonical by construction and must not be second-guessed here.
+const industryAnswered = clean(args.industry) !== '';
+if (industryAnswered && merged.industrySource !== 'crm') {
+  const picked = matchIndustry(args.industry);
+  if (picked) {
+    merged.industry = picked;
+    merged.industrySource = 'asked';
+  } else {
+    delete merged.industry;
+    delete merged.industrySource;
+  }
+  // Records that the question has now been PUT, separately from whether it produced an answer.
+  //
+  // Without this a decline loops forever: nothing is recorded, so nothing is known, so the
+  // question is added to the plan again, and a visitor in an industry we do not list can never
+  // finish the introduction. Not a contract field and never emitted; it lives in the merged bag
+  // only so it survives to the next turn through context.digitalRoomVisitor.
+  merged.industryAsked = true;
+}
+
+const industryKnown = clean(merged.industry) !== '';
+const industryDeclined = merged.industryAsked === true && !industryKnown;
 
 // Five questions covering seven fields, plus a sixth only when the email identifies no
 // employer. Name, and company plus role, are each asked once.
@@ -120,6 +203,25 @@ if (isNiceEmployee) {
 QUESTION_PLAN.push({ needs: ['department'], ask: 'Ask which department or team the project is for. It may not be their own.' });
 QUESTION_PLAN.push({ needs: ['interest'], ask: 'Ask what kind of solution they are looking at, in their own words.' });
 
+// The vertical, asked ONLY when nothing has answered it: no CRM match, an unmappable CRM
+// industry, or a colleague browsing for their own knowledge, for whom nothing is looked up.
+//
+// LAST, not at the point the company becomes known, even though that is where the decision is
+// really made. lookup_crm is a separate tool call the model has to choose to make, and putting
+// this question at the end gives that call two questions' worth of room to land, so the common
+// case is that CRM has already answered and this is never reached. app/src/fixtures/
+// conversation.ts places it last for the same reason, so the two stay in step.
+//
+// A colleague exploring for themselves is excluded outright: nothing is searched for them, and
+// they have no vertical that changes what is worth showing.
+const askIndustry = !industryKnown && !industryDeclined && audienceIsProspect;
+if (askIndustry) {
+  QUESTION_PLAN.push({
+    needs: ['industry'],
+    ask: 'Ask which industry they are in. Say plainly that it is the single biggest factor in which customer stories you show them, and that if none of the options fit they should just say so and you will leave it out. The twelve options appear as BUTTONS automatically, so do NOT list, name or hint at any of them.'
+  });
+}
+
 let profileWritten = false;
 
 try {
@@ -139,6 +241,7 @@ try {
       company: merged.company,
       jobTitle: merged.jobTitle,
       department: merged.department,
+      industry: merged.industry,
       solutionInterest: merged.interest,
       website: merged.website,
       preparingFor: merged.onBehalfOfCompany,
@@ -204,6 +307,32 @@ try {
   actions.output(null, { _visitor: visitorPayload });
 } catch (e) { /* the portal simply will not personalise; not worth failing the turn */ }
 
+// The vertical question's twelve options, as BUTTONS.
+//
+// Emitted only on the turn that actually asks it. All twelve are offered rather than a
+// shortlist: a shortlist would be us guessing which vertical the visitor is in, which is the
+// exact mistake the whole normalisation exists to avoid. There is no "none of these" button
+// because the composer is always there and the question says so, and a thirteenth would push
+// the list past the contract's limit.
+//
+// action 'offer' touches the stage not at all. Every other action has a side effect, so
+// offering a choice would otherwise disturb whatever the visitor is looking at.
+// Contract: contracts/stage-directive.schema.json
+const askingIndustryNow = nextStep !== null && nextStep.fields.indexOf('industry') !== -1;
+if (askingIndustryNow) {
+  try {
+    actions.output(null, {
+      _showroom: {
+        v: 1,
+        action: 'offer',
+        cta: INDUSTRY_LABELS.map(function (label) {
+          return { label: label, value: label, kind: 'quick_reply' };
+        })
+      }
+    });
+  } catch (e) { /* the visitor can still type it; not worth failing the turn */ }
+}
+
 // The choices are BUTTONS, so the reply must not repeat them.
 //
 // This guidance used to say "offer exactly three example questions", and the agent duly wrote
@@ -226,11 +355,28 @@ if (audience === 'nice-on-behalf') {
   completionGuidance = 'The introduction is done. This is a NiCE colleague exploring for their own knowledge, so they are neither a customer nor a lead: do NOT call OAT_DIGITAL_ROOM_lookup_crm. Thank them in one line, then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department. Do not show anything on the stage yet.' + CHOICES_ARE_BUTTONS;
 }
 
+// Nudges the lookup EARLY, as soon as there is something to look up, instead of waiting for
+// the introduction to finish. Two reasons, and the second is the important one:
+//
+//   1. The vertical question at the end of the plan is skipped when CRM has answered, so the
+//      lookup has to have happened by then or the visitor is asked something we know.
+//   2. The model does not reliably call this tool at all. Asking earlier gives it more
+//      chances, and when it still never fires the question is simply asked, which is the safe
+//      direction to fail: a redundant question costs one tap, a missing lookup costs the
+//      vertical entirely.
+const crmLookupPending = !complete && audienceIsProspect && crmIndustry === '' && Boolean(lookupWebsite);
+const lookupNudge = crmLookupPending
+  ? ' Before you ask it, call OAT_DIGITAL_ROOM_lookup_crm ONCE with crmLookupWebsite as companyWebsite, unless you already called it this conversation. Say nothing about that lookup to the visitor.'
+  : '';
+
 input.result = {
   ok: true,
   storedIn: profileWritten ? 'profile+context' : 'context',
   known: merged,
   audience: audience,
+  industry: clean(merged.industry) || null,
+  industrySource: clean(merged.industrySource) || null,
+  askingIndustry: askingIndustryNow,
   crmLookupWebsite: lookupWebsite || null,
   companyDomain: merged.website ? clean(merged.website) : (emailIsPersonal ? null : (domain || null)),
   emailIsPersonalProvider: emailIsPersonal,
@@ -240,5 +386,5 @@ input.result = {
   nextQuestion: nextStep ? nextStep.ask : null,
   guidance: complete
     ? completionGuidance
-    : 'Ask ONLY the next question, in your own words, as one short question. Do not stack questions and do not re-ask anything already present in known.'
+    : 'Ask ONLY the next question, in your own words, as one short question. Do not stack questions and do not re-ask anything already present in known.' + lookupNudge
 };
