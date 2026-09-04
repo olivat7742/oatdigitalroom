@@ -115,6 +115,30 @@ To preview the card without conversing through the agent, the dev server serves 
 `/verify-document.html`. It mounts the real component with real catalog data, including the
 no-thumbnail fallback that is otherwise almost never seen.
 
+## Offering a choice
+
+When the guide offers options, they arrive as **clickable buttons**, not as a list typed into
+the message. `find_demo` emits them; the model does not choose them. Same rule as everywhere
+else here: the model chooses what, the tool decides how.
+
+The directive action is `offer`, which carries `cta` and touches the stage not at all. It exists
+because `cta` is applied independently of the action while every other action has a side effect,
+so a tool wanting to offer a choice would otherwise have to clear the stage or pause a playing
+video to do it.
+
+**Label and value do different jobs.** The label is shortened at a natural break, so
+"Supervisor Workspace, managing human and AI agents" becomes "Supervisor Workspace"; the value
+stays the full title, because that is what retrieval matches on and what
+`tools/test-retrieval.mjs` asserts works. Truncation is the fallback, not the method. The rule
+lives in `ctaLabel` and is mirrored in `cognigy/code-nodes/search-catalog.js`.
+
+**The reply must not repeat the buttons.** Two fixes were needed for that, in order:
+`store_visitor_profile` used to instruct the agent to "offer exactly three example questions",
+which fought the new buttons, so the visitor read a paragraph and then found the identical three
+choices underneath it. Removing that instruction stopped the bullets but the agent then
+paraphrased all three in a flowing sentence, which is the same duplication in prose. What
+finally worked was giving it a model answer to copy rather than another prohibition.
+
 ## Header personalisation
 
 Once the agent identifies the visitor, their company logo appears in the middle of the header.

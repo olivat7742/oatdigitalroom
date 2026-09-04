@@ -31,6 +31,14 @@ export type StageAction =
   | 'step'
   | 'clear'
   /**
+   * Offers quick-reply buttons and touches the stage not at all.
+   *
+   * Needed because cta is applied independently of the action, but every other action has a
+   * side effect: 'clear' empties the stage, 'pause' stops a playing video. Without this, a tool
+   * that wants to offer choices has to disturb what the visitor is looking at to do it.
+   */
+  | 'offer'
+  /**
    * Replaces the stage with the closing summary. The chat stays open and the visitor can keep
    * going, so this is a change of view rather than the end of a session.
    */
@@ -169,6 +177,7 @@ const ACTIONS: readonly StageAction[] = [
   'highlight',
   'step',
   'clear',
+  'offer',
   'wrapup',
 ]
 

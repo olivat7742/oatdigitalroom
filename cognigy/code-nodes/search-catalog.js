@@ -232,8 +232,36 @@ if (!payload || !Array.isArray(payload.assets)) {
     return out;
   }
 
+  // Offer the matches as CLICKABLE BUTTONS, not only as a list the agent types out.
+  //
+  // The agent was answering "here are three ways you might explore X" with a prose list, and
+  // the visitor then had to retype one of them. The buttons are emitted here rather than left
+  // to the model for the usual reason: the model chooses WHAT, the tool decides HOW.
+  //
+  // Mirrors ctaLabel in app/src/transport/MockTransport.ts. The label is shortened at a natural
+  // break so "Supervisor Workspace, managing human and AI agents" reads "Supervisor Workspace",
+  // while the VALUE stays the full title, which is what retrieval matches on.
+  //
+  // action 'offer' touches nothing on the stage, so this cannot interrupt a playing video.
+  function ctaLabel(title, max) {
+    max = max || 30;
+    const atBreak = String(title || '').split(/[,:(]/)[0].trim();
+    const base = atBreak.length >= 12 && atBreak.length <= max ? atBreak : String(title || '').trim();
+    return base.length > max ? base.slice(0, max - 1).replace(/\s+$/, '') + '…' : base;
+  }
+
   if (strongMatches.length > 0) {
     const projected = strongMatches.slice(0, maxResults).map(project);
+
+    const buttons = projected.slice(0, 3).map(function (m) {
+      return { label: ctaLabel(m.title), value: m.title, kind: 'quick_reply' };
+    });
+    if (buttons.length > 0) {
+      try {
+        actions.output(null, { _showroom: { v: 1, action: 'offer', cta: buttons } });
+      } catch (e) { /* buttons are an enhancement; never fail the tool over them */ }
+    }
+
     input.result = {
       ok: true,
       catalogSize: pool.length,
@@ -244,6 +272,7 @@ if (!payload || !Array.isArray(payload.assets)) {
         : 'Approved content only.',
       startInstruction: 'matches[0] is the recommended choice. If it has recommendedStartSeconds, you MUST pass that exact number as the position argument to OAT_DIGITAL_ROOM_show_demo, and say roughly where you are taking them. Opening at the start when a recommended start was given wastes the visitor time. Only omit position if the visitor explicitly asked to watch from the beginning.',
       documentNotice: 'An asset with isDocument true is READ, not watched. Follow its readingInstruction exactly and never pass position for it.',
+      buttonNotice: 'The visitor can already SEE these choices as buttons under the chat, added for you. Do NOT list them again in your reply, and do not number or bullet them. Say one short line about where you would start and let them tap.',
       chapterNavigation: 'An asset with hasChapters false can only be played from the start. If the visitor asks for a specific moment inside one of those, say you cannot navigate inside it rather than inventing a timestamp.',
       matches: projected
     };

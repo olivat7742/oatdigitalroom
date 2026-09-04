@@ -204,11 +204,26 @@ try {
   actions.output(null, { _visitor: visitorPayload });
 } catch (e) { /* the portal simply will not personalise; not worth failing the turn */ }
 
-let completionGuidance = 'The introduction is done. Thank them in one line using their first name, then call OAT_DIGITAL_ROOM_lookup_crm ONCE, then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department, and offer exactly three example questions drawn from the titles it returns, phrased as things THEY would say. Do not show anything on the stage yet: let them choose.';
+// The choices are BUTTONS, so the reply must not repeat them.
+//
+// This guidance used to say "offer exactly three example questions", and the agent duly wrote
+// them out as a bulleted list. find_demo now also emits them as quick-reply buttons under the
+// chat, so the visitor was reading a paragraph and then finding the identical three choices
+// underneath it, which is more to read and slower to act on, not less.
+//
+// Two instructions pulling in opposite directions is worse than either alone, so this one
+// changed rather than adding a louder note somewhere else.
+// Phrased as an EXAMPLE rather than only a prohibition. Told merely not to list the options,
+// the agent stopped bulleting them and paraphrased all three in a flowing sentence instead,
+// which is the same duplication in prose. A model answer is followed more reliably than a rule.
+const CHOICES_ARE_BUTTONS =
+  ' The choices appear to the visitor as BUTTONS automatically. Your whole reply is ONE short line that does NOT describe them, exactly like: "Thanks, Camille. Here is where I would start. Tap whichever fits, or ask me anything else." Never list, number, bullet, summarise or hint at what the options are, and never ask which one they want: the buttons do that.';
+
+let completionGuidance = 'The introduction is done. Thank them in one line using their first name, then call OAT_DIGITAL_ROOM_lookup_crm ONCE, then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department. Do not show anything on the stage yet: let them choose.' + CHOICES_ARE_BUTTONS;
 if (audience === 'nice-on-behalf') {
-  completionGuidance = 'The introduction is done. This is a NiCE colleague preparing for a customer, so conduct the rest as if that customer were the visitor. Call OAT_DIGITAL_ROOM_lookup_crm ONCE passing companyWebsite as the CUSTOMER website in crmLookupWebsite, not nice.com. Then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department, and offer exactly three example questions drawn from the titles it returns. Do not show anything on the stage yet.';
+  completionGuidance = 'The introduction is done. This is a NiCE colleague preparing for a customer, so conduct the rest as if that customer were the visitor. Call OAT_DIGITAL_ROOM_lookup_crm ONCE passing companyWebsite as the CUSTOMER website in crmLookupWebsite, not nice.com. Then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department. Do not show anything on the stage yet.' + CHOICES_ARE_BUTTONS;
 } else if (audience === 'nice-internal') {
-  completionGuidance = 'The introduction is done. This is a NiCE colleague exploring for their own knowledge, so they are neither a customer nor a lead: do NOT call OAT_DIGITAL_ROOM_lookup_crm. Thank them in one line, then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department, and offer exactly three example questions drawn from the titles it returns. Do not show anything on the stage yet.';
+  completionGuidance = 'The introduction is done. This is a NiCE colleague exploring for their own knowledge, so they are neither a customer nor a lead: do NOT call OAT_DIGITAL_ROOM_lookup_crm. Thank them in one line, then call OAT_DIGITAL_ROOM_find_demo using their stated interest and department. Do not show anything on the stage yet.' + CHOICES_ARE_BUTTONS;
 }
 
 input.result = {

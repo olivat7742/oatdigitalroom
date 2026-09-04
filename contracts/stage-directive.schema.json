@@ -17,8 +17,8 @@
         },
         "action": {
           "type": "string",
-          "enum": ["show", "play", "pause", "seek", "highlight", "step", "clear", "wrapup"],
-          "description": "show = render asset without autoplay. play = render and start. seek = jump within the current asset. highlight = draw attention to a region of the current asset. step = advance a walkthrough or tour. clear = empty the stage. wrapup = replace the stage with the closing summary; the chat stays open and the visitor can carry on, which is why it does not end the session."
+          "enum": ["show", "play", "pause", "seek", "highlight", "step", "clear", "offer", "wrapup"],
+          "description": "show = render asset without autoplay. play = render and start. seek = jump within the current asset. highlight = draw attention to a region of the current asset. step = advance a walkthrough or tour. clear = empty the stage. offer = carry quick-reply buttons and change nothing on the stage; it exists because cta is applied independently of the action while every other action has a side effect, so offering a choice would otherwise disturb what the visitor is looking at. wrapup = replace the stage with the closing summary; the chat stays open and the visitor can carry on, which is why it does not end the session."
         },
         "summary": {
           "type": "object",

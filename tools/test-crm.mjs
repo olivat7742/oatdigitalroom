@@ -140,6 +140,45 @@ try {
   const introDone = (visitor, label) =>
     check(`${label}: introduction completed`, visitor?.introductionComplete === true, visitor)
 
+  // Choices must arrive as BUTTONS, not only as a list in the prose. The screenshot that
+  // prompted this showed three options typed into the message with nothing to click.
+  console.log('\nquick-reply buttons')
+  {
+    const { messages } = await converse(MockTransport, [
+      'Camille Dubois',
+      'Vantage Bank, Head of Workforce Planning',
+      'camille@vantagebank.com',
+      'Workforce planning',
+      'AI for WFM forecasting and scheduling',
+    ])
+    const intro = messages.find((m) => m.data?._visitor?.introductionComplete === true)
+    const cta = intro?.data?._showroom?.cta ?? []
+    check('the introduction offers buttons', cta.length === 3, cta)
+    check(
+      'every button has a label and a value',
+      cta.every((c) => c.label && c.value),
+      cta,
+    )
+    check(
+      'labels are short enough for a chip',
+      cta.every((c) => c.label.length <= 30),
+      cta.map((c) => `${c.label.length}: ${c.label}`),
+    )
+    check(
+      'values are full titles, so retrieval still matches them',
+      cta.every((c) => c.value.length >= c.label.length),
+      cta,
+    )
+    // The prose must not repeat what the buttons already say.
+    const text = intro?.text ?? ''
+    check('the reply does not bullet the options', !text.includes('\n·') && !text.includes('\n-'), text)
+    check(
+      'the reply does not restate a button label',
+      !cta.some((c) => text.includes(c.value)),
+      text,
+    )
+  }
+
   console.log('\nconversation: external visitor at a KNOWN account')
   {
     const { summary, visitor } = await converse(MockTransport, [

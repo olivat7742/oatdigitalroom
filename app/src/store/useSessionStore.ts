@@ -141,6 +141,12 @@ export function applyDirective(stage: StageState, directive: StageDirective): St
     case 'highlight':
       return { ...stage, highlighted: true }
 
+    // Buttons only. Returned unchanged on purpose: the cta is applied by the caller,
+    // independently of the action, and this is the one action whose whole job is to leave the
+    // stage alone while it happens.
+    case 'offer':
+      return stage
+
     default:
       return stage
   }

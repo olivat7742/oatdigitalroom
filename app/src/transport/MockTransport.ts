@@ -1,4 +1,4 @@
-import type { ConnectionState, InboundMessage, Transport } from './types'
+﻿import type { ConnectionState, InboundMessage, Transport } from './types'
 import {
   FALLBACK,
   GREETING,
@@ -11,7 +11,7 @@ import {
 } from '@/fixtures/conversation'
 import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
 import { isNiceEmployee, lookupCrm, type CrmLookupResult } from '@/crm'
-import type { StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
+import type { Cta, StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
 
 /**
  * The three actions the summary panel can submit.
@@ -24,6 +24,33 @@ const FOLLOWUP = /^(please email me documentation links|i would like to speak wi
 
 /** Farewells that should close with the summary rather than be searched for in the catalog. */
 const FAREWELL = /^\s*(bye|goodbye|good bye|see you|see ya|thanks,? that'?s all|that'?s all|that is all|i'?m done|im done|we'?re done|no thanks,? bye|ciao|au revoir|merci,? au revoir|end|finish|wrap up|that will be all)\b/i
+
+/**
+ * Turns catalog assets into quick-reply buttons.
+ *
+ * The LABEL is shortened and the VALUE is the full title. Those are different jobs: a chip has
+ * to be scannable in a narrow rail, while the value is fed straight back into retrieval, where
+ * the full title is what the checks in tools/test-retrieval.mjs assert works.
+ *
+ * Shortened at a natural break first, so "Supervisor Workspace, managing human and AI agents"
+ * becomes "Supervisor Workspace" rather than "Supervisor Workspace, managi...". Truncation is
+ * the fallback, not the method.
+ *
+ * The same rule is implemented in the Cognigy search_catalog node, so the live agent and the
+ * portal offer the same buttons. See cognigy/code-nodes/search-catalog.js.
+ */
+export function ctaLabel(title: string, max = 30): string {
+  const atBreak = title.split(/[,:(]/)[0]?.trim() ?? title
+  const base = atBreak.length >= 12 && atBreak.length <= max ? atBreak : title.trim()
+  return base.length > max ? `${base.slice(0, max - 1).trimEnd()}…` : base
+}
+
+export function ctaFromAssets(
+  assets: { title: string }[],
+  kind: Cta['kind'] = 'quick_reply',
+): Cta[] {
+  return assets.map((asset) => ({ label: ctaLabel(asset.title), value: asset.title, kind }))
+}
 
 /**
  * Builds a turn from a catalog search, or null when nothing matches.
@@ -54,11 +81,7 @@ function catalogSearchTurn(query: string): ScriptedStep[] | null {
             action: 'play',
             asset,
             cta: [
-              ...alternatives.map((alt) => ({
-                label: alt.title.length > 34 ? `${alt.title.slice(0, 32)}...` : alt.title,
-                value: alt.title,
-                kind: 'next_asset' as const,
-              })),
+              ...ctaFromAssets(alternatives, 'next_asset'),
               { label: 'Something else', value: 'What else can you show me?', kind: 'quick_reply' as const },
             ].slice(0, 3),
           },
@@ -345,23 +368,24 @@ export class MockTransport implements Transport {
     const suggestions = matches.length > 0 ? matches : searchCatalog('agent supervisor outbound', 3)
 
     const lead = name ? `Thanks, ${name}.` : 'Thanks.'
-    const lines = suggestions.map((asset) => `· ${asset.title} (${formatRuntime(asset.durationSeconds)})`)
 
+    // The options are BUTTONS, not a list in the prose.
+    //
+    // The agent used to print the same three titles as bullets AND send them as chips, so
+    // the visitor read a paragraph and then found the identical choices underneath it. One
+    // short line plus the buttons is less to read and quicker to act on, which is the whole
+    // point of offering a choice.
     return [
       {
         delayMs: 650,
         message: {
-          text: `${lead} Based on that, here is what I would start with:\n\n${lines.join('\n')}\n\nPick one, or ask me anything else.`,
+          text: `${lead} Based on that, here is where I would start. Tap one, or ask me anything else.`,
           data: {
             ...this.visitorPayload(true),
             _showroom: {
               v: 1,
               action: 'clear',
-              cta: suggestions.slice(0, 3).map((asset) => ({
-                label: asset.title.length > 30 ? `${asset.title.slice(0, 28)}...` : asset.title,
-                value: asset.title,
-                kind: 'quick_reply' as const,
-              })),
+              cta: ctaFromAssets(suggestions.slice(0, 3)),
             },
           },
         },
