@@ -133,12 +133,17 @@ function computeCrm() {
   const accounts = fx.accounts || {};
   const niceDomains = fx.niceDomains || [];
 
+  // A colleague preparing for a customer is looked up against THAT customer, not their own
+  // employer, which is the entire point of asking which company it is for.
+  const onBehalf = crmHost(visitor.onBehalfOfWebsite || '');
+
   const email = String(visitor.email || '').trim().toLowerCase();
-  if (email.indexOf('@') === -1) { return null; }
-  const domain = crmHost(email.slice(email.lastIndexOf('@') + 1));
+  if (!onBehalf && email.indexOf('@') === -1) { return null; }
+  const domain = onBehalf || crmHost(email.slice(email.lastIndexOf('@') + 1));
   if (!domain) { return { status: 'new-lead' }; }
 
-  for (let i = 0; i < niceDomains.length; i++) {
+  // Skipped entirely when a customer website was given: the colleague is not the subject.
+  for (let i = 0; !onBehalf && i < niceDomains.length; i++) {
     // Anchored at the END, so eu.nice.com matches but nice.com.attacker.io does not.
     if (domain === niceDomains[i] || domain.slice(-(niceDomains[i].length + 1)) === '.' + niceDomains[i]) {
       // A colleague with no customer named is neither a customer nor a lead.

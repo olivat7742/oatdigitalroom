@@ -172,11 +172,23 @@ const STOPWORDS = new Set([
  * contains "agentic" exactly and outranks a title that merely contains "Agents".
  */
 function stemsOf(term: string): string[] {
-  const out = []
+  const out: string[] = []
+
+  // Explicit English endings FIRST. Generic truncation alone cannot strip a three-letter
+  // suffix, so "reskilling" never reached "reskill" and the question "jump straight to the
+  // reskilling recommendations" stopped matching the chapter labelled Reskill. That was a
+  // regression introduced by replacing an older -ing/-s stemmer with truncation; both are
+  // needed, because truncation catches "retailer" and endings catch "reskilling".
+  if (term.length > 5 && term.endsWith('ing')) out.push(term.slice(0, -3))
+  if (term.length > 4 && term.endsWith('ed')) out.push(term.slice(0, -2))
+  if (term.length > 4 && term.endsWith('ies')) out.push(`${term.slice(0, -3)}y`)
+  if (term.length > 4 && term.endsWith('es')) out.push(term.slice(0, -2))
+  if (term.length > 3 && term.endsWith('s')) out.push(term.slice(0, -1))
+
   for (let end = term.length - 1; end >= 5 && end >= term.length - 2; end -= 1) {
     out.push(term.slice(0, end))
   }
-  return out
+  return out.filter((stem, index) => stem.length >= 3 && out.indexOf(stem) === index)
 }
 
 function escape(value: string): string {

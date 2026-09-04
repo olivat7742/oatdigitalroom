@@ -31,6 +31,8 @@ recovery path if a node is damaged.
 | File | Node |
 |---|---|
 | `build-summary.js` | `OAT_DIGITAL_ROOM_build_summary` |
+| `search-catalog.js` | `OAT_DIGITAL_ROOM_search_catalog` |
+| `store-visitor-profile.js` | `OAT_DIGITAL_ROOM_store_visitor_profile` |
 | `lookup-crm-postprocess.js` | post-process of `OAT_DIGITAL_ROOM_lookup_crm` |
 
 Both live in `OAT_DIGITAL_ROOM_Guide Flow`. The flow and node **ids are deliberately not
@@ -38,9 +40,22 @@ here**: they are tenant identifiers, and this repository is public. They are in
 `../deployed.md`, which is gitignored for exactly that reason, and
 `manage_flow_nodes { operation: "list", flowId }` reprints them at any time.
 
-Not yet mirrored, because their source still cannot be read: `search_catalog`,
-`emit_stage_directive`, `store_visitor_profile`, `record_handoff`. Paste each one in as it
-becomes available.
+Not yet mirrored, because their source still cannot be read: `emit_stage_directive` and
+`record_handoff`. Paste each one in as it becomes available.
+
+## Which of these must agree with the portal
+
+Two pairs are supposed to behave identically, and both have already drifted once:
+
+| Cognigy | Portal |
+|---|---|
+| `search-catalog.js` scoring | `searchCatalog` in `app/src/catalog.ts` |
+| `lookup-crm-postprocess.js` | `lookupCrm` in `app/src/crm.ts` |
+
+`node tools/test-retrieval.mjs` and `node tools/test-crm.mjs` assert the PORTAL side only.
+Nothing automatically checks the Cognigy side, so a change there has to be exercised with
+`talk_to_agent`. Every ranking bug in this project so far was found that way and not by the
+test suite.
 
 ## No credentials here
 

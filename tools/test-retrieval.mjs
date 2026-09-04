@@ -53,6 +53,12 @@ const CASES = [
   ['Can I read an ebook on CX AI maturity?', 'cx-ai-maturity-assessment-and-guidebook'],
   ['Do you have anything for higher education enrollment?', 'from-enrollment-cliff-to-lifelong-loyalty-orchestrating-the-student-journey-with-ai'],
 
+  // Chapter jumping. Live-only regression: replacing the older -ing/-s stemmer with generic
+  // truncation meant "reskilling" no longer reached the chapter labelled Reskill, and the
+  // question returned nothing at all. Neither surface had a check for it.
+  ['Jump straight to the reskilling recommendations', 'supervisor-control-clarity-coaching'],
+  ['How do I find AI agents that are failing?', 'supervisor-control-clarity-coaching'],
+
   // Videos must keep working now that documents compete with them. The ids are the real ones:
   // asserting 'agent-copilot' and 'supervisor-workspace' from memory failed here, because
   // neither exists. Exact-id assertions are what caught that.
