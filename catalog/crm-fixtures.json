@@ -1,0 +1,34 @@
+{
+  "notes": "INVENTED DATA. Every company and every representative below is fictional and must stay that way. The Salesforce org this stands in for is NiCE production: roughly 250,000 accounts, real customer names, real employee names, none of which belongs in a public repository. Read the disclosure gate in docs/solution-design.md before pointing any of this at real CRM: the Digital Room is unauthenticated and the identity is self-declared, so a live lookup would tell anyone with the URL whether a given company is a NiCE customer and which employee owns it.",
+  "readBy": "app/src/crm.ts in the portal, and the OAT_DIGITAL_ROOM_lookup_crm tool in Cognigy, which fetches this file from the public repo. ONE file so the portal and the live agent cannot drift into giving different answers about the same company, which is the same reason the demo catalog is fetched rather than duplicated.",
+  "version": "1.0.0",
+  "niceDomains": [
+    "nice.com",
+    "niceincontact.com",
+    "nice-incontact.com",
+    "incontact.com",
+    "cognigy.com"
+  ],
+  "accounts": {
+    "northwindlogistics.com": {
+      "matchType": "opportunity",
+      "accountName": "Northwind Logistics",
+      "salesRep": { "name": "Camille Fournier", "role": "Account Executive" }
+    },
+    "vantagebank.com": {
+      "matchType": "account",
+      "accountName": "Vantage Bank",
+      "salesRep": { "name": "Daniel Okafor", "role": "Client Director" }
+    },
+    "helioretail.com": {
+      "matchType": "contact",
+      "accountName": "Helio Retail Group",
+      "salesRep": { "name": "Sofia Lindqvist", "role": "Account Executive" }
+    },
+    "brightpathcare.com": {
+      "matchType": "lead",
+      "accountName": "Brightpath Care",
+      "salesRep": { "name": "Marc Delaunay", "role": "Sales Development" }
+    }
+  }
+}

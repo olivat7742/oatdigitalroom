@@ -24,6 +24,7 @@
  */
 
 import { resolveCompanyDomain } from '@/company'
+import fixtures from '@catalog/crm-fixtures.json'
 
 /**
  * Which Salesforce object the match came from. Ordered by how much it tells us: an open
@@ -58,13 +59,7 @@ export interface CrmLookupResult {
  * cognigy.com is included because Cognigy is part of NiCE, so those colleagues are internal
  * for this purpose even though the domain differs.
  */
-const NICE_DOMAINS = new Set([
-  'nice.com',
-  'niceincontact.com',
-  'nice-incontact.com',
-  'incontact.com',
-  'cognigy.com',
-])
+const NICE_DOMAINS = new Set(fixtures.niceDomains)
 
 export function isNiceEmployee(email: string | undefined): boolean {
   if (!email) return false
@@ -81,35 +76,21 @@ export function isNiceEmployee(email: string | undefined): boolean {
 }
 
 /**
- * The fictional CRM. Keyed by domain, because a domain is the one identifier that is stable
- * and unambiguous: company names repeat across countries, and "Orange" is a telecom in France
- * and a county in California.
+ * The fictional CRM, read from catalog/crm-fixtures.json.
  *
- * These four cover the four match types deliberately, so a demo can show each path rather than
- * only the happy one.
+ * That file rather than a literal here, because the Cognigy lookup_crm tool fetches the same
+ * file from the public repo. Two copies would drift, and the failure mode is specific and
+ * embarrassing: the portal telling a visitor they are a known account while the live agent
+ * tells the same visitor they are a new lead.
+ *
+ * Keyed by domain, because a domain is the one identifier that is stable and unambiguous:
+ * company names repeat across countries, and "Orange" is a telecom in France and a county in
+ * California.
+ *
+ * The four entries cover the four match types deliberately, so a demo can show each path
+ * rather than only the happy one.
  */
-const FIXTURES: Record<string, Omit<CrmLookupResult, 'status' | 'domain'>> = {
-  'northwindlogistics.com': {
-    matchType: 'opportunity',
-    accountName: 'Northwind Logistics',
-    salesRep: { name: 'Camille Fournier', role: 'Account Executive' },
-  },
-  'vantagebank.com': {
-    matchType: 'account',
-    accountName: 'Vantage Bank',
-    salesRep: { name: 'Daniel Okafor', role: 'Client Director' },
-  },
-  'helioretail.com': {
-    matchType: 'contact',
-    accountName: 'Helio Retail Group',
-    salesRep: { name: 'Sofia Lindqvist', role: 'Account Executive' },
-  },
-  'brightpathcare.com': {
-    matchType: 'lead',
-    accountName: 'Brightpath Care',
-    salesRep: { name: 'Marc Delaunay', role: 'Sales Development' },
-  },
-}
+const FIXTURES = fixtures.accounts as Record<string, Omit<CrmLookupResult, 'status' | 'domain'>>
 
 /**
  * Looks up a company and reports whether NiCE already knows it.
