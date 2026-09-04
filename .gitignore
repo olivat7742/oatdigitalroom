@@ -28,3 +28,14 @@ cognigy/deployed.md
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# The generated deck and its PDF. Deliberately NOT committed, even though the generator is.
+#
+# The .pptx is built on NiCE's corporate PowerPoint template, so it embeds the slide master,
+# 32 layouts and 34 media files from it. This repository is public, and publishing internal
+# corporate template artwork is not ours to do. The deck also discusses content that is not
+# yet approved for external use, and open security questions.
+#
+# tools/deck rebuilds it in seconds from the template on your machine, so nothing is lost.
+docs/*.pptx
+docs/*.pdf
