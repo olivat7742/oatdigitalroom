@@ -169,6 +169,14 @@ try {
       cta.every((c) => c.value.length >= c.label.length),
       cta,
     )
+    // A shortened label is only acceptable because the full text is recoverable on hover, and
+    // the tooltip is driven off label !== value. If a shortened label ever equalled its value,
+    // the chip would show "…" with no way to read the rest.
+    check(
+      'anything shortened still carries its full text in the value',
+      cta.every((c) => (c.label.endsWith('…') ? c.value !== c.label : true)),
+      cta,
+    )
     // The prose must not repeat what the buttons already say.
     const text = intro?.text ?? ''
     check('the reply does not bullet the options', !text.includes('\n·') && !text.includes('\n-'), text)

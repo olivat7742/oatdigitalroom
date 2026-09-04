@@ -3,6 +3,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Paper from '@mui/material/Paper'
 import Chip from '@mui/material/Chip'
+import Tooltip from '@mui/material/Tooltip'
 import TextField from '@mui/material/TextField'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
@@ -101,22 +102,39 @@ export function ChatRail() {
         >
           {cta.map((item, index) => {
             const isHandoff = item.kind === 'handoff'
+            // The label is shortened to fit a chip in a narrow rail, so on the long ones the
+            // visitor cannot see what they are about to ask for. The full text is the VALUE,
+            // which is exactly the question that gets sent.
+            const shortened = item.label !== item.value
+
             return (
-              <Chip
+              // Always wrapped, so every chip is laid out identically. MUI renders no tooltip
+              // for an empty title, which is what a chip that was not shortened gets: a
+              // tooltip repeating a fully visible label is noise on every hover.
+              <Tooltip
                 key={`${item.value}-${index}`}
-                label={item.label}
-                onClick={() => submit(item.value)}
-                sx={{
-                  cursor: 'pointer',
-                  bgcolor: isHandoff ? brand.black : 'transparent',
-                  color: isHandoff ? brand.white : brand.black,
-                  border: '1px solid',
-                  borderColor: isHandoff ? brand.black : brand.hairlineStrong,
-                  '&:hover': {
-                    bgcolor: isHandoff ? brand.black : brand.base,
-                  },
-                }}
-              />
+                title={shortened ? item.value : ''}
+                arrow
+                placement="top"
+              >
+                <Chip
+                  label={item.label}
+                  onClick={() => submit(item.value)}
+                  // Spoken in full regardless of the tooltip: a tooltip is hover-only, and a
+                  // screen reader would otherwise read a truncated label ending in an ellipsis.
+                  aria-label={item.value}
+                  sx={{
+                    cursor: 'pointer',
+                    bgcolor: isHandoff ? brand.black : 'transparent',
+                    color: isHandoff ? brand.white : brand.black,
+                    border: '1px solid',
+                    borderColor: isHandoff ? brand.black : brand.hairlineStrong,
+                    '&:hover': {
+                      bgcolor: isHandoff ? brand.black : brand.base,
+                    },
+                  }}
+                />
+              </Tooltip>
             )
           })}
         </Stack>
