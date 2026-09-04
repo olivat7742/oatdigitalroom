@@ -32,9 +32,23 @@
         },
         "department": { "type": "string" },
         "interest": { "type": "string" },
+        "audience": {
+          "type": "string",
+          "enum": ["customer", "nice-internal", "nice-on-behalf"],
+          "description": "Who is actually in the room. Derived from the email domain, never asked directly. customer is an external visitor. nice-internal is a NiCE employee exploring for their own knowledge, for whom no CRM lookup happens at all. nice-on-behalf is a NiCE employee preparing for a named customer or prospect, in which case onBehalfOf carries that company and the conversation is conducted as if that company were the visitor."
+        },
+        "onBehalfOf": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Present only when audience is nice-on-behalf. The company the NiCE employee is preparing for, which becomes the subject of the CRM lookup, the header logo and the content targeting, in place of the employee's own employer. Without this the header would show the NiCE logo to a NiCE employee, which tells them nothing.",
+          "properties": {
+            "company": { "type": "string", "description": "As the employee said it. Display only, never used to guess a domain." },
+            "website": { "type": "string", "description": "The identifying signal, for the same reason as website above." }
+          }
+        },
         "introductionComplete": {
           "type": "boolean",
-          "description": "True once all five introduction questions are answered."
+          "description": "True once the introduction questions are answered. The count varies: an external visitor answers five, a NiCE employee answers more, because the branch asking who they are preparing for is only reachable for them."
         }
       }
     }

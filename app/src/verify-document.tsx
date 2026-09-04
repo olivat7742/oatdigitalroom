@@ -1,15 +1,14 @@
 /**
- * Dev-only preview harness for the DocumentAsset renderer.
+ * Dev-only preview harness for stage renderers.
  *
  *   http://localhost:5180/verify-document.html
  *
- * Mounts the real component with real catalog data, so the card can be checked without
- * conversing through the agent to reach a document, and without switching the dev server to
- * mock mode. It is a separate Vite entry, so it never ships in the app bundle.
+ * Mounts real components with real data, so a card or panel can be checked without conversing
+ * through the agent to reach it, and without switching the dev server to mock mode. It is a
+ * separate Vite entry, so it never ships in the app bundle.
  *
- * Renders three cases deliberately: a case study with an industry badge, a datasheet whose
- * badge set differs, and an asset with no thumbnail, since the fallback icon path is the one
- * most likely to be wrong and the least likely to be seen.
+ * Each case is one that is otherwise hard to reach or easy to get wrong: the no-thumbnail
+ * fallback, and the three mutually exclusive states of the closing summary's CRM block.
  */
 
 import { StrictMode } from 'react'
@@ -22,9 +21,10 @@ import Box from '@mui/material/Box'
 import { theme, brand } from '@/theme'
 import { toStageAsset } from '@/catalog'
 import { DocumentAsset } from '@/components/stage/DocumentAsset'
-import type { StageAsset } from '@/types/stageDirective'
+import { SummaryPanel } from '@/components/stage/SummaryPanel'
+import type { StageAsset, StageSummary } from '@/types/stageDirective'
 
-const cases: { label: string; asset: StageAsset | null }[] = [
+const documentCases: { label: string; asset: StageAsset | null }[] = [
   { label: 'Case study, with industry badge', asset: toStageAsset('optum-case-study') },
   { label: 'Datasheet, technical depth', asset: toStageAsset('cxone-fedramp-for-government') },
   {
@@ -36,12 +36,56 @@ const cases: { label: string; asset: StageAsset | null }[] = [
   },
 ]
 
+const baseSummary: StageSummary = {
+  headline: 'Thanks, Dana.',
+  viewed: [{ assetId: 'optum-case-study', title: 'Case Study: Optum' }],
+  topics: [{ id: 'ai', label: 'AI agents', preselected: true }],
+  emailKnown: true,
+}
+
+const summaryCases: { label: string; summary: StageSummary }[] = [
+  {
+    label: 'CRM: known account, rep named',
+    summary: {
+      ...baseSummary,
+      crm: {
+        status: 'known',
+        salesRepName: 'Camille Fournier',
+        salesRepRole: 'Account Executive',
+        accountName: 'Northwind Logistics',
+        matchType: 'opportunity',
+      },
+    },
+  },
+  {
+    label: 'CRM: new lead, an AE will be assigned',
+    summary: { ...baseSummary, crm: { status: 'new-lead' } },
+  },
+  {
+    label: 'CRM: absent (NiCE employee, own knowledge) - no block at all',
+    summary: baseSummary,
+  },
+]
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Stack spacing={4} sx={{ p: 4, bgcolor: brand.gray, minHeight: '100vh' }}>
-        {cases.map(({ label, asset }) => (
+        {/* Summary cases first: they are the newest thing here and the three CRM states are
+            mutually exclusive, so seeing them adjacent is the whole point. */}
+        {summaryCases.map(({ label, summary }) => (
+          <Stack key={label} spacing={1}>
+            <Typography variant="overline" sx={{ color: brand.darkGray }}>
+              {label}
+            </Typography>
+            <Box sx={{ height: 420, bgcolor: brand.white, borderRadius: 3, p: 2.5 }}>
+              <SummaryPanel summary={summary} />
+            </Box>
+          </Stack>
+        ))}
+
+        {documentCases.map(({ label, asset }) => (
           <Stack key={label} spacing={1}>
             <Typography variant="overline" sx={{ color: brand.darkGray }}>
               {label}

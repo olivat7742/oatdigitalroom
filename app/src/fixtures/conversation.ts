@@ -97,6 +97,34 @@ export const ONBOARDING: OnboardingStep[] = [
   { fields: ['interest'], question: 'Last one. What kind of solution are you looking at, in your own words?' },
 ]
 
+/**
+ * Extra questions asked only of a NiCE employee, spliced in straight after the email answer
+ * because that is the moment the domain identifies them.
+ *
+ * A colleague is not a lead. Running them through the customer script would put NiCE's own
+ * logo in the header, and would either find NiCE's own Salesforce account or mark a colleague
+ * as a new lead, both of which are noise. So we ask who the session is really for.
+ *
+ * The website is asked rather than accepted from the company name for the same reason as
+ * everywhere else in this project: names repeat across countries and a wrong match here would
+ * name the wrong account executive.
+ */
+export const NICE_EMPLOYEE_BRANCH: OnboardingStep[] = [
+  {
+    fields: ['niceIntent'],
+    question:
+      "You're on the NiCE side, so let me ask a different question. Is this for your own knowledge, or are you preparing for a specific customer or prospect?",
+  },
+]
+
+export const NICE_ON_BEHALF_BRANCH: OnboardingStep[] = [
+  {
+    fields: ['onBehalfOfCompany', 'onBehalfOfWebsite'],
+    question:
+      'Which company is it for? Their website is the most useful part, since company names repeat across countries and I would rather not match the wrong account.',
+  },
+]
+
 export const GREETING: ScriptedStep[] = [
   {
     delayMs: 400,

@@ -24,10 +24,18 @@ const LOGO_MAX_WIDTH = 150
 export function CompanyBadge() {
   const visitor = useSessionStore((s) => s.visitor)
 
-  const company = visitor?.company?.trim() ?? ''
+  // When a NiCE employee is preparing for a customer, the header follows the CUSTOMER, not the
+  // employee. Showing a colleague the NiCE logo tells them nothing, and the whole session is
+  // being conducted as if that customer were the visitor, so the chrome should agree.
+  const onBehalfOf = visitor?.audience === 'nice-on-behalf' ? visitor.onBehalfOf : undefined
+
+  const company = (onBehalfOf?.company ?? visitor?.company)?.trim() ?? ''
+  const subjectEmail = onBehalfOf ? undefined : visitor?.email
+  const subjectWebsite = onBehalfOf?.website ?? visitor?.website
+
   const identity = useMemo(
-    () => resolveCompanyDomain({ email: visitor?.email, website: visitor?.website }),
-    [visitor?.email, visitor?.website],
+    () => resolveCompanyDomain({ email: subjectEmail, website: subjectWebsite }),
+    [subjectEmail, subjectWebsite],
   )
 
   const candidates = useMemo(
@@ -48,8 +56,13 @@ export function CompanyBadge() {
   const exhausted = candidateIndex >= candidates.length
 
   const label = company || identity.domain || ''
+  const source = onBehalfOf
+    ? 'the customer website given'
+    : visitor?.website
+      ? 'the website given'
+      : 'the email domain'
   const tooltip = identity.domain
-    ? `${label} · logo resolved from ${visitor?.website ? 'the website given' : 'the email domain'} ${identity.domain}`
+    ? `${label} · logo resolved from ${source} ${identity.domain}`
     : `${label} · no company domain available${identity.reason === 'generic-provider' ? ', the email is a personal provider' : ''}`
 
   return (

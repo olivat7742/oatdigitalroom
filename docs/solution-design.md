@@ -179,6 +179,41 @@ What is **not** in place, and needs a decision before this faces real prospects:
 from the introduction. Having someone's email because they typed it into a demo is not the
 same as their agreement to be contacted about it.
 
+### CRM lookup, and the gate it must pass before touching real data
+
+Once the visitor and their company are known, the Digital Room says whether NiCE already has a
+relationship with that company, and if so names the person who owns it. A visitor with no
+record is told an Account Executive will be assigned, which is true and more useful than an
+empty space. A NiCE employee browsing for their own knowledge is neither, so nothing is looked
+up and neither message is shown.
+
+**Today this runs entirely on invented fixtures in `app/src/crm.ts`, and that is deliberate.**
+
+Pointing it at the real Salesforce org would change its risk profile completely, and the design
+below must be in place first. The org in question is NiCE production: roughly 250,000 accounts,
+real customer names, real employee names.
+
+The problem is that the Digital Room is **unauthenticated and the identity is self-declared**.
+Nothing stops someone typing a competitor's domain. A live lookup would then answer two
+questions truthfully to anyone holding the public URL:
+
+- Is *company X* a NiCE customer, or in an active opportunity?
+- Which NiCE employee owns that relationship?
+
+The first is a customer list. The second is a staff directory keyed to accounts. Both are
+enumerable: work through a list of domains and read off the answers. Neither is information the
+visitor has any right to before they have proved who they are.
+
+So before this touches real CRM:
+
+1. **Verify the email before the lookup, not after.** A code sent to the address is enough. It converts "anyone can ask about any company" into "anyone can ask about a company they can receive mail for".
+2. **Keep the lookup server-side.** It must never become a client-callable endpoint that returns rep names, or the verification is decoration.
+3. **Return the minimum.** The panel needs a name and role. It does not need the account record, the opportunity value, or the rep's contact details, so those should never leave the server.
+4. **Rate-limit and log by source.** Enumeration looks like traffic; nothing else will reveal it.
+5. **Decide whether naming an employee to an external visitor is acceptable at all.** That is a call for whoever owns the CRM and the employee relationship, not an engineering decision. A safe middle is to confirm a relationship exists without naming anyone until the visitor asks to be contacted.
+
+Until those exist, mock mode leaks nothing, because none of the data is real.
+
 ---
 
 ## 3. Architecture

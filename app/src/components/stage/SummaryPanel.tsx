@@ -82,6 +82,47 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
           </Typography>
         </Box>
 
+        {/* Who owns the relationship. Absent entirely when no lookup ran, which is the case for
+            a NiCE employee browsing for themselves: they are neither a customer nor a lead, and
+            telling them an Account Executive will be assigned to them would be nonsense. */}
+        {summary.crm && (
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: brand.base,
+              borderLeft: `3px solid ${summary.crm.status === 'known' ? brand.primary : brand.darkGray}`,
+            }}
+          >
+            {summary.crm.status === 'known' && summary.crm.salesRepName ? (
+              <>
+                <Typography variant="subtitle2" sx={{ color: brand.black }}>
+                  Your NiCE contact
+                </Typography>
+                <Typography variant="body2" sx={{ color: brand.black, mt: 0.5 }}>
+                  {summary.crm.salesRepName}
+                  {summary.crm.salesRepRole ? `, ${summary.crm.salesRepRole}` : ''}
+                  {summary.crm.accountName ? ` for ${summary.crm.accountName}` : ''}
+                </Typography>
+                <Typography variant="caption" sx={{ color: brand.darkGray, display: 'block', mt: 0.5 }}>
+                  They already work with your organisation, so anything you ask for here reaches
+                  someone who knows the account.
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="subtitle2" sx={{ color: brand.black }}>
+                  An Account Executive will be assigned
+                </Typography>
+                <Typography variant="body2" sx={{ color: brand.darkGray, mt: 0.5 }}>
+                  You are new to us, so there is no named contact yet. Someone will be assigned to
+                  your account shortly and will pick up from what you looked at here.
+                </Typography>
+              </>
+            )}
+          </Box>
+        )}
+
         {summary.viewed.length > 0 && (
           <Box>
             <Typography variant="subtitle2" sx={{ color: brand.black, mb: 1 }}>

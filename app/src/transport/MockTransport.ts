@@ -1,6 +1,16 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
-import { FALLBACK, GREETING, ONBOARDING, SCRIPT, type ScriptedStep } from '@/fixtures/conversation'
+import {
+  FALLBACK,
+  GREETING,
+  NICE_EMPLOYEE_BRANCH,
+  NICE_ON_BEHALF_BRANCH,
+  ONBOARDING,
+  SCRIPT,
+  type OnboardingStep,
+  type ScriptedStep,
+} from '@/fixtures/conversation'
 import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
+import { isNiceEmployee, lookupCrm, type CrmLookupResult } from '@/crm'
 import type { StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
 
 /**
@@ -89,6 +99,21 @@ export class MockTransport implements Transport {
   private readonly visitor: Record<string, string> = {}
 
   /**
+   * The question plan for THIS visitor, which grows as answers open branches.
+   *
+   * A copy rather than the imported constant: splicing the shared array would leak one
+   * visitor's branch into the next session, and in mock mode that array outlives the transport.
+   */
+  private readonly plan: OnboardingStep[] = [...ONBOARDING]
+
+  /**
+   * Whether NiCE already knows this company. Resolved once, when the introduction closes,
+   * rather than at wrap-up: the answer cannot change mid-session, and doing it here means the
+   * closing page has it ready instead of computing it at the moment it is displayed.
+   */
+  private crm: CrmLookupResult = { status: 'skipped' }
+
+  /**
    * Assets actually put on the stage, in order, deduplicated.
    *
    * Recorded from the outgoing directives rather than from the matcher, so every path that
@@ -130,7 +155,12 @@ export class MockTransport implements Transport {
   send(text: string): void {
     // The introduction comes first, and takes precedence over the topic matchers so an answer
     // like "retail" is treated as an answer rather than a demo request.
-    if (this.onboardingStep < ONBOARDING.length) {
+    //
+    // Gated on the LIVE plan length, not on ONBOARDING.length. The plan grows when a branch
+    // opens, and gating on the constant meant a NiCE employee's extra questions pushed the last
+    // two answers past the gate: "Customer service" was answered with a demo instead of being
+    // recorded, and the introduction never completed, so no CRM lookup ever ran.
+    if (this.onboardingStep < this.plan.length) {
       this.replay(this.advanceOnboarding(text))
       return
     }
@@ -162,7 +192,7 @@ export class MockTransport implements Transport {
    * three suggestions built from what they said.
    */
   private advanceOnboarding(answer: string): ScriptedStep[] {
-    const step = ONBOARDING[this.onboardingStep]
+    const step = this.plan[this.onboardingStep]
     if (step) {
       const value = answer.trim()
       if (step.fields.length === 2) {
@@ -179,14 +209,96 @@ export class MockTransport implements Transport {
         for (const field of step.fields) this.visitor[field] = value
       }
     }
+    // Branches are inserted AFTER the answer is recorded and BEFORE the index advances, so the
+    // new questions land immediately after the one that triggered them rather than at the end.
+    if (step) this.branchAfter(step)
     this.onboardingStep += 1
 
-    const next = ONBOARDING[this.onboardingStep]
+    const next = this.plan[this.onboardingStep]
     if (next) {
       return [{ delayMs: 550, message: { text: next.question, data: this.visitorPayload(false) } }]
     }
 
     return this.introductionComplete()
+  }
+
+  /**
+   * Grows the question plan when an answer opens a branch.
+   *
+   * The plan is instance state rather than the imported constant precisely so this can happen:
+   * a NiCE employee is asked more questions than a customer, and which ones depends on what
+   * they say. Splicing keeps the ordering intuitive, so "who is it for" follows the email
+   * question that revealed they are internal.
+   */
+  private branchAfter(step: OnboardingStep): void {
+    const insert = (steps: OnboardingStep[]) => {
+      this.plan.splice(this.onboardingStep + 1, 0, ...steps)
+    }
+
+    if (step.fields.includes('email') && isNiceEmployee(this.visitor['email'])) {
+      this.visitor['audience'] = 'nice-internal'
+      insert(NICE_EMPLOYEE_BRANCH)
+      return
+    }
+
+    if (step.fields.includes('niceIntent')) {
+      // Anything that is not clearly "for myself" is treated as being for a customer. Erring
+      // this way costs one extra question when wrong; erring the other way silently skips the
+      // CRM lookup the colleague actually wanted.
+      const ownKnowledge = /\b(own|myself|me|my knowledge|personal|learn|curio|general|no one|nobody)\b/i.test(
+        this.visitor['niceIntent'] ?? '',
+      )
+      if (!ownKnowledge) {
+        this.visitor['audience'] = 'nice-on-behalf'
+        insert(NICE_ON_BEHALF_BRANCH)
+      }
+    }
+  }
+
+  /**
+   * Decides WHO the CRM lookup is about, then runs it.
+   *
+   * Three cases, and the distinction matters more than the lookup itself:
+   *
+   * A NiCE employee browsing for their own knowledge is not a lead and is not a customer, so
+   * nothing is searched. Searching would find NiCE's own account, or mark a colleague as a new
+   * lead, and the closing page would then tell them an Account Executive will be assigned to
+   * them, which is nonsense.
+   *
+   * A NiCE employee preparing for a named company is searched against THAT company, not their
+   * own employer, which is the whole point of asking.
+   *
+   * Everyone else is searched on their own email domain.
+   */
+  private runCrmLookup(): CrmLookupResult {
+    const audience = this.visitor['audience']
+
+    if (audience === 'nice-internal') return { status: 'skipped' }
+
+    if (audience === 'nice-on-behalf') {
+      const website = this.visitor['onBehalfOfWebsite'] ?? this.visitor['onBehalfOfCompany'] ?? ''
+      // No email for the subject company: a colleague knows who they are preparing for, not
+      // that person's address. So the website is the only identifier, and if it is unusable
+      // the honest answer is that nothing was found.
+      return lookupCrm({ website })
+    }
+
+    return lookupCrm({
+      email: this.visitor['email'] ?? '',
+      website: this.visitor['website'] ?? '',
+    })
+  }
+
+  /** The CRM result in the shape the closing summary contract expects, or undefined. */
+  private summaryCrm(): StageSummary['crm'] {
+    if (this.crm.status === 'skipped') return undefined
+    return {
+      status: this.crm.status,
+      ...(this.crm.salesRep?.name ? { salesRepName: this.crm.salesRep.name } : {}),
+      ...(this.crm.salesRep?.role ? { salesRepRole: this.crm.salesRep.role } : {}),
+      ...(this.crm.accountName ? { accountName: this.crm.accountName } : {}),
+      ...(this.crm.matchType ? { matchType: this.crm.matchType } : {}),
+    }
   }
 
   /**
@@ -196,7 +308,29 @@ export class MockTransport implements Transport {
    * Contract: contracts/visitor-payload.schema.json
    */
   private visitorPayload(introductionComplete: boolean): Record<string, unknown> {
-    return { _visitor: { v: 1, ...this.visitor, introductionComplete } }
+    // Mapped field by field rather than spread. The internal bag now holds working values that
+    // are not part of the contract (niceIntent, and the two onBehalfOf answers before they are
+    // nested), and the schema sets additionalProperties:false, so a spread would emit a payload
+    // that fails its own contract.
+    const { onBehalfOfCompany, onBehalfOfWebsite, niceIntent: _intent, ...rest } = this.visitor
+    void _intent
+
+    const onBehalfOf =
+      onBehalfOfCompany || onBehalfOfWebsite
+        ? {
+            ...(onBehalfOfCompany ? { company: onBehalfOfCompany } : {}),
+            ...(onBehalfOfWebsite ? { website: onBehalfOfWebsite } : {}),
+          }
+        : undefined
+
+    return {
+      _visitor: {
+        v: 1,
+        ...rest,
+        ...(onBehalfOf ? { onBehalfOf } : {}),
+        introductionComplete,
+      },
+    }
   }
 
   /** Closes the introduction with suggestions drawn from the catalog, using their own words. */
@@ -204,6 +338,8 @@ export class MockTransport implements Transport {
     const interest = this.visitor['interest'] ?? ''
     const department = this.visitor['department'] ?? ''
     const name = (this.visitor['firstName'] ?? '').split(/\s+/)[0] ?? ''
+
+    this.crm = this.runCrmLookup()
 
     const matches = searchCatalog(`${interest} ${department}`.trim(), 3)
     const suggestions = matches.length > 0 ? matches : searchCatalog('agent supervisor outbound', 3)
@@ -287,11 +423,14 @@ export class MockTransport implements Transport {
       }
     }
 
+    const crm = this.summaryCrm()
+
     const summary: StageSummary = {
       headline: name ? `Thanks, ${name}.` : 'Thanks for visiting.',
       viewed: this.viewed,
       topics: topics.slice(0, 8),
       emailKnown: Boolean(this.visitor['email']),
+      ...(crm ? { crm } : {}),
     }
 
     return [

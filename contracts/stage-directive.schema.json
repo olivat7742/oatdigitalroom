@@ -27,6 +27,30 @@
           "additionalProperties": false,
           "properties": {
             "headline": { "type": "string", "description": "Short closing line, usually including their first name." },
+            "crm": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Whether NiCE already has a relationship with this company, so the closing page can name the person who owns it instead of offering a generic form. Omit entirely when no lookup happened, which is the case for a NiCE employee browsing for their own knowledge. The panel must render correctly without it.",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["known", "new-lead"],
+                  "description": "known means a record was found and someone owns the relationship. new-lead means nothing matched, which is the common case and is a finding, not a failure."
+                },
+                "salesRepName": {
+                  "type": "string",
+                  "description": "Only meaningful when status is known: a new lead has nobody assigned yet, which is the whole point of the distinction. This names a real employee to an unauthenticated visitor, so see the disclosure gate in docs/solution-design.md before it carries real data."
+                },
+                "salesRepRole": { "type": "string" },
+                "accountName": { "type": "string", "description": "The account as CRM holds it, which may differ from what the visitor typed." },
+                "matchType": {
+                  "type": "string",
+                  "enum": ["opportunity", "account", "contact", "lead"],
+                  "description": "Which record matched. Carried so the closing line can be honest about the strength of the relationship rather than treating a stale lead like an active opportunity."
+                }
+              }
+            },
             "viewed": {
               "type": "array",
               "description": "Assets actually put on the stage this session, in order, deduplicated.",

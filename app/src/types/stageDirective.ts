@@ -123,10 +123,26 @@ export interface SummaryTopic {
   preselected?: boolean
 }
 
+/**
+ * Whether NiCE already has a relationship with the visitor's company.
+ *
+ * Absent when no lookup happened, which is deliberate: a NiCE employee browsing for their own
+ * knowledge is not a lead and must not be shown either branch of this.
+ */
+export interface SummaryCrm {
+  status: 'known' | 'new-lead'
+  /** Only meaningful when status is 'known'. A new lead has nobody assigned yet. */
+  salesRepName?: string
+  salesRepRole?: string
+  accountName?: string
+  matchType?: 'opportunity' | 'account' | 'contact' | 'lead'
+}
+
 export interface StageSummary {
   headline?: string
   viewed: ViewedAsset[]
   topics: SummaryTopic[]
+  crm?: SummaryCrm
   /**
    * Whether an email was captured. The panel must not treat this as permission to use it:
    * having someone's address is not their consent to be contacted.

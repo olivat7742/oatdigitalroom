@@ -17,8 +17,17 @@ export interface Visitor {
   website?: string
   department?: string
   interest?: string
+  /**
+   * Who is actually in the room. Derived from the email domain, never asked directly.
+   * Absent for an ordinary visitor, so a client that ignores it behaves as before.
+   */
+  audience?: 'customer' | 'nice-internal' | 'nice-on-behalf'
+  /** Present only for 'nice-on-behalf': the company the NiCE employee is preparing for. */
+  onBehalfOf?: { company?: string; website?: string }
   introductionComplete?: boolean
 }
+
+const AUDIENCES = ['customer', 'nice-internal', 'nice-on-behalf'] as const
 
 const STRING_FIELDS = [
   'firstName',
@@ -61,6 +70,24 @@ export function extractVisitor(data: unknown): Visitor | null {
   }
   if (typeof payload['introductionComplete'] === 'boolean') {
     visitor.introductionComplete = payload['introductionComplete']
+  }
+
+  // Validated against the enum rather than copied through. An unknown audience would silently
+  // fall into the "ordinary visitor" branch everywhere it is read, which is the wrong default
+  // for a value whose whole job is to say this visitor is NOT ordinary.
+  const audience = payload['audience']
+  if (typeof audience === 'string' && (AUDIENCES as readonly string[]).includes(audience)) {
+    visitor.audience = audience as Visitor['audience']
+  }
+
+  const onBehalfOf = payload['onBehalfOf']
+  if (isRecord(onBehalfOf)) {
+    const nested: { company?: string; website?: string } = {}
+    for (const field of ['company', 'website'] as const) {
+      const value = onBehalfOf[field]
+      if (typeof value === 'string' && value.trim() !== '') nested[field] = value.trim()
+    }
+    if (Object.keys(nested).length > 0) visitor.onBehalfOf = nested
   }
 
   return Object.keys(visitor).length > 0 ? visitor : null
