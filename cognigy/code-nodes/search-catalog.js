@@ -218,7 +218,12 @@ if (!payload || !Array.isArray(payload.assets)) {
     };
 
     if (isDocument) {
-      out.readingInstruction = 'This is a DOCUMENT, not a video. It is read, not watched. Never say video, play, watch, chapters or "from the start" about it. Say it is on screen, name what kind of document it is, and offer that they can open it on nice.com to read in full or keep for later. Never pass a position argument for it.';
+      // "Say it is on screen" used to be in here, and it was the cause of a live falsehood: the
+      // agent found this white paper, never called show_demo, and told the visitor it was on
+      // screen while the stage sat empty. A tool that only FINDS things must not instruct the
+      // model to claim they are visible. Fixing the persona text did not help, because this
+      // arrives attached to the asset the model is reasoning about and beats it.
+      out.readingInstruction = 'This is a DOCUMENT, not a video. It is read, not watched. Never say video, play, watch, chapters or "from the start" about it. It is NOT on the stage yet: call OAT_DIGITAL_ROOM_show_demo to put it there, and only once that has succeeded may you say it is on screen. Name what kind of document it is, and offer that they can open it on nice.com to read in full or keep for later. Never pass a position argument for it.';
       if (a.source && a.source.watchUrl) { out.publicUrl = a.source.watchUrl; }
     }
 
@@ -272,6 +277,8 @@ if (!payload || !Array.isArray(payload.assets)) {
         : 'Approved content only.',
       startInstruction: 'matches[0] is the recommended choice. If it has recommendedStartSeconds, you MUST pass that exact number as the position argument to OAT_DIGITAL_ROOM_show_demo, and say roughly where you are taking them. Opening at the start when a recommended start was given wastes the visitor time. Only omit position if the visitor explicitly asked to watch from the beginning.',
       documentNotice: 'An asset with isDocument true is READ, not watched. Follow its readingInstruction exactly and never pass position for it.',
+      // The general form of the same rule, so it covers videos too rather than only documents.
+      stageNotice: 'FINDING IS NOT SHOWING. This result has put NOTHING on the stage. Until OAT_DIGITAL_ROOM_show_demo returns success, the stage still holds whatever it held before: never say an asset is on screen, up, open, showing or playing, and never describe what the visitor can see. If you are not showing it in this turn, say you will bring it up, not that it is already there.',
       buttonNotice: 'The visitor can already SEE these choices as buttons under the chat, added for you. Do NOT list them again in your reply, and do not number or bullet them. Say one short line about where you would start and let them tap.',
       chapterNavigation: 'An asset with hasChapters false can only be played from the start. If the visitor asks for a specific moment inside one of those, say you cannot navigate inside it rather than inventing a timestamp.',
       matches: projected
