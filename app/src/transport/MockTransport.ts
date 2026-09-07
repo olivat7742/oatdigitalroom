@@ -185,7 +185,20 @@ export class MockTransport implements Transport {
   }
 
   send(text: string): void {
-    // The introduction comes first, and takes precedence over the topic matchers so an answer
+    // A farewell is understood at ANY point, including mid-introduction, and is checked before
+    // the introduction gate for that reason.
+    //
+    // The takeaways tray offers its wrap-up button as soon as it has something in it, which can
+    // be before the introduction has finished. Behind the gate, that click was recorded as the
+    // answer to whichever question was on screen and the visitor got nothing. It is also just
+    // right on its own: someone who says goodbye during the introduction should be said goodbye
+    // to, not have "bye" filed as their department.
+    if (FAREWELL.test(text)) {
+      this.replay(this.wrapUp())
+      return
+    }
+
+    // The introduction comes next, and takes precedence over the topic matchers so an answer
     // like "retail" is treated as an answer rather than a demo request.
     //
     // Gated on the LIVE plan length, not on ONBOARDING.length. The plan grows when a branch
@@ -200,11 +213,6 @@ export class MockTransport implements Transport {
     // Checked before the catalog search, or these would be matched as topics.
     if (FOLLOWUP.test(text)) {
       this.replay(this.acknowledgeFollowUp(text))
-      return
-    }
-
-    if (FAREWELL.test(text)) {
-      this.replay(this.wrapUp())
       return
     }
 
@@ -330,6 +338,17 @@ export class MockTransport implements Transport {
    */
   private resolveCrm(): void {
     if (this.crmResolved) return
+
+    // Nothing identifying yet, so there is nothing to look up. Reachable now that the tray can
+    // wrap up mid-introduction: resolving here would mark the lookup done and tell someone who
+    // has given only their name that they are new to us, which is not a finding, it is an
+    // absence of one.
+    const audience = this.visitor['audience']
+    const hasSubject =
+      audience === 'nice-internal' ||
+      Boolean(this.visitor['email'] || this.visitor['website'] || this.visitor['onBehalfOfWebsite'])
+    if (!hasSubject) return
+
     this.crmResolved = true
     this.crm = this.runCrmLookup()
 
@@ -513,6 +532,10 @@ export class MockTransport implements Transport {
    * suggestions drawn from what they said they were interested in.
    */
   private wrapUp(): ScriptedStep[] {
+    // Normally already done. Called again because wrap-up is now reachable mid-introduction, so
+    // an early exit still gets the relationship line if we know enough to look it up.
+    this.resolveCrm()
+
     const name = (this.visitor['firstName'] ?? '').split(/\s+/)[0] ?? ''
     const topics: SummaryTopic[] = []
     const seen = new Set<string>()

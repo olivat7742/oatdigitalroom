@@ -392,6 +392,21 @@ if (crmLookupPending) {
     : ' Before you ask it, call OAT_DIGITAL_ROOM_lookup_crm ONCE with crmLookupWebsite as companyWebsite, unless you already called it this conversation. Say nothing about that lookup to the visitor.';
 }
 
+// The vertical question's buttons must be the LAST buttons of the turn, or they answer a
+// question the visitor is not being asked.
+//
+// Observed live: a visitor asked for a demo mid-introduction, so this node emitted the twelve
+// industry options and then find_demo emitted three asset titles, which replaced them. The
+// visitor was asked "which industry are you in?" and offered three videos to tap. The client
+// cannot fix this, because it has no way to know which pending question a set of buttons
+// belongs to, so the turn simply must not do both.
+//
+// Deferring the content is the right way round: the question is one tap and the demo is still
+// there afterwards, whereas a demo shown now with the wrong buttons under it wastes both.
+if (askingIndustryNow) {
+  lookupNudge += ' This question is the WHOLE turn. Do NOT call OAT_DIGITAL_ROOM_find_demo or OAT_DIGITAL_ROOM_show_demo in this turn, even if the visitor just asked to see something: its suggestions would replace this question\'s buttons and leave the visitor answering the wrong question. If they asked for content, say in one clause that you will bring it up next, then ask this.';
+}
+
 input.result = {
   ok: true,
   storedIn: profileWritten ? 'profile+context' : 'context',

@@ -125,6 +125,14 @@ console.log('\nstore_visitor_profile: when the vertical is asked')
     !asked.result.guidance.includes('Do NOT ask this question yet'),
     asked.result.guidance,
   )
+  // Observed live: a visitor asked for a demo mid-introduction, find_demo emitted three asset
+  // titles AFTER this node's twelve industry options, and replaced them. The visitor was asked
+  // which industry they were in and offered three videos to tap.
+  check(
+    'the turn that asks it is told not to show content as well',
+    asked.result.guidance.includes('WHOLE turn') && asked.result.guidance.includes('find_demo'),
+    asked.result.guidance,
+  )
 
   const known = runProfile(base, { crm: { status: 'known', industry: 'Financial' } })
   check('with a CRM answer, it is NOT asked', known.result.askingIndustry === false, known.result.nextQuestion)
@@ -132,6 +140,11 @@ console.log('\nstore_visitor_profile: when the vertical is asked')
   check('and the vertical is carried', known.result.industry === 'Financial', known.result.industry)
   check('marked as looked up', known.result.industrySource === 'crm', known.result.industrySource)
   check('no buttons are offered', !known.outputs.some((o) => o.data && o.data._showroom))
+  check(
+    'and a turn that is NOT asking the vertical carries no content restriction',
+    !known.result.guidance.includes('WHOLE turn'),
+    known.result.guidance,
+  )
 
   const colleague = runProfile({ ...base, email: 'o@nice.com', niceIntent: 'for my own knowledge' })
   check('a colleague browsing for themselves is never asked', colleague.result.askingIndustry === false, colleague.result.nextQuestion)

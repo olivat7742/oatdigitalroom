@@ -59,11 +59,16 @@ const WRAP_UP_MESSAGE = 'Wrap up and show me my takeaways'
  */
 function IndustryShortcut({ compact = false }: { compact?: boolean }) {
   const label = useSessionStore((s) => s.visitor?.industry)
+  const introductionComplete = useSessionStore((s) => s.visitor?.introductionComplete)
   const send = useSessionStore((s) => s.sendVisitorMessage)
   const setTrayOpen = useSessionStore((s) => s.setTrayOpen)
 
   const industry = industryByLabel(label)
   if (!industry) return null
+  // Held back until the introduction is over, unlike the wrap-up button. Both send a message,
+  // but a farewell is understood at any point in the conversation whereas "Show me Retail
+  // customer stories" would be read as the answer to whichever question is on screen.
+  if (!introductionComplete) return null
 
   const ask = () => {
     send(`Show me ${industry.label} customer stories`)
@@ -217,15 +222,21 @@ export function TakeawaysTray() {
   const nudgeWrapUp = useSessionStore((s) => s.nudgeWrapUp)
   const send = useSessionStore((s) => s.sendVisitorMessage)
 
-  // Watched only once the introduction is over and nothing is playing. During the introduction
-  // there are no takeaways to offer, and every message sent would be swallowed as an answer to
-  // the question on screen. While a video plays, sitting still IS the activity.
-  useLeaveIntent(nudgeWrapUp, Boolean(introductionComplete) && !open && !playing)
+  // The tray is available as soon as there is anything IN it, or once the introduction is over.
+  //
+  // Gating it on introductionComplete alone was wrong, and live use showed why: a visitor who
+  // asks for a demo mid-introduction gets the video, and the agent keeps a question
+  // outstanding, so the introduction stays incomplete. They were left watching content with no
+  // way to reach what they had collected. What the tray holds is the thing that decides whether
+  // it should exist.
+  const hasContent = seen.length > 0
+  const available = hasContent || Boolean(introductionComplete)
 
-  // Hidden entirely until the introduction is answered, for the same reason: a strip offering
-  // takeaways before anything has been shown is furniture, and its button would be read as an
-  // answer to whichever question is on screen.
-  if (!introductionComplete) return null
+  // Watched only when the tray is available, closed, and nothing is playing. While a video
+  // plays, sitting still IS the activity, which is why the idle timer must not see it.
+  useLeaveIntent(nudgeWrapUp, available && !open && !playing)
+
+  if (!available) return null
 
   if (open) {
     return (
