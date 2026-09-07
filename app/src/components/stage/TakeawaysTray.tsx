@@ -229,8 +229,13 @@ export function TakeawaysTray() {
   // outstanding, so the introduction stays incomplete. They were left watching content with no
   // way to reach what they had collected. What the tray holds is the thing that decides whether
   // it should exist.
-  const hasContent = seen.length > 0
-  const available = hasContent || Boolean(introductionComplete)
+  //
+  // A summary counts on its own, and that clause is not redundant. A visitor who skips the
+  // introduction and asks a question the agent answers in prose reaches wrap-up with nothing
+  // viewed and nothing complete: the agent said "the summary is on the left" while this
+  // returned null and there was no summary anywhere. If the agent has produced one, it has to
+  // have somewhere to go.
+  const available = seen.length > 0 || Boolean(summary) || Boolean(introductionComplete)
 
   // Watched only when the tray is available, closed, and nothing is playing. While a video
   // plays, sitting still IS the activity, which is why the idle timer must not see it.

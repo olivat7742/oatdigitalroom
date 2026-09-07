@@ -65,6 +65,32 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
     setSubmitted(confirmation)
   }
 
+  /**
+   * Whether we have an address to reach them on.
+   *
+   * A visitor can get this far without one: the introduction is not compulsory, and someone who
+   * asks questions straight away never answers it.
+   */
+  const emailKnown = Boolean(summary.emailKnown)
+
+  /**
+   * Appended to a request when we cannot reach them, so the guide asks.
+   *
+   * The buttons deliberately stay ENABLED without an address. A gate blocks and a prompt
+   * converts: the visitor has just declared intent, which is the moment they will hand over an
+   * email, and far better than demanding it at the top of the conversation. Disabling them
+   * instead produced the worst of both, a live "Request a callback" that promised a callback
+   * nobody could make.
+   *
+   * It also stops the request claiming an address we do not have. The email-links wording said
+   * "you can contact me at my email" whether or not one had ever been given.
+   */
+  const needsEmail = emailKnown ? '' : ' I have not given you my email address yet, so please ask me for it.'
+
+  /** What the panel says back. Never claims something is on its way when nobody can send it. */
+  const confirm = (done: string) =>
+    emailKnown ? `${done} The guide has picked it up in the chat.` : `${done} The guide needs an email address, and is asking for it in the chat.`
+
   // Capped so the outgoing message stays readable in the rail. Ticking eight topics otherwise
   // produced a single sentence longer than the summary itself.
   const topicsPhrase =
@@ -242,8 +268,8 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
               disabled={!emailConsent || submitted !== null}
               onClick={() =>
                 act(
-                  `Please email me documentation links about: ${topicsPhrase}. I confirm you can contact me at my email for this.`,
-                  'Asked for the documentation links by email.',
+                  `Please email me documentation links about: ${topicsPhrase}. I confirm you can contact me by email for this.${needsEmail}`,
+                  confirm('Asked for the documentation links by email.'),
                 )
               }
             >
@@ -257,8 +283,8 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
               disabled={submitted !== null}
               onClick={() =>
                 act(
-                  `I would like to speak with a NiCE sales representative about: ${topicsPhrase}.`,
-                  'Asked to speak with a sales representative.',
+                  `I would like to speak with a NiCE sales representative about: ${topicsPhrase}.${needsEmail}`,
+                  confirm('Asked to speak with a sales representative.'),
                 )
               }
               sx={{ borderColor: brand.hairlineStrong, color: brand.black }}
@@ -273,8 +299,8 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
               disabled={submitted !== null}
               onClick={() =>
                 act(
-                  `Please arrange a callback to discuss: ${topicsPhrase}.`,
-                  'Asked for a callback.',
+                  `Please arrange a callback to discuss: ${topicsPhrase}.${needsEmail}`,
+                  confirm('Asked for a callback.'),
                 )
               }
               sx={{ borderColor: brand.hairlineStrong, color: brand.black }}
@@ -285,7 +311,7 @@ export function SummaryPanel({ summary }: { summary: StageSummary }) {
 
           {submitted && (
             <Typography variant="body2" sx={{ color: brand.primaryDark, mt: 1.5, fontWeight: 500 }}>
-              {submitted} The guide has picked it up in the chat.
+              {submitted}
             </Typography>
           )}
         </Box>

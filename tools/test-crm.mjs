@@ -56,7 +56,7 @@ function check(label, condition, detail) {
  * with deliberate latency to make pacing reviewable, and a fixed sleep would either be slow or
  * flaky.
  */
-async function converse(MockTransport, answers) {
+async function converse(MockTransport, answers, after = []) {
   const transport = new MockTransport()
   const messages = []
   let settleTimer = null
@@ -85,6 +85,13 @@ async function converse(MockTransport, answers) {
 
   transport.send('bye')
   await quiet()
+
+  // Anything the visitor does on the closing panel, which is after the farewell by definition.
+  for (const extra of after) {
+    transport.send(extra)
+    await quiet()
+  }
+
   transport.disconnect()
 
   let summary
@@ -269,6 +276,57 @@ try {
       askedIndustry(messages) === false,
       messages.map((m) => m.text),
     )
+  }
+
+  // The closing panel's buttons stay ENABLED without an address, on purpose: a gate blocks and
+  // a prompt converts. What must never happen is the panel confirming a callback that nobody
+  // can make, which is what it did when those two buttons checked nothing at all.
+  console.log('\nfollow-up with no usable address: the guide asks for one')
+  {
+    const { summary, messages } = await converse(
+      MockTransport,
+      [
+        'Jo Baker',
+        'Quietfield Consulting, Operations Lead',
+        // Fills the field without being an address. The panel used to tell this visitor their
+        // links had been sent to the address they gave earlier.
+        'I would rather not say',
+        'Operations',
+        'Workforce management',
+        'Insurance',
+      ],
+      [
+        'Please arrange a callback to discuss: what we covered. I have not given you my email address yet, so please ask me for it.',
+        'jo.baker@helioretail.com',
+      ],
+    )
+
+    check('the summary knows there is no address', summary?.emailKnown === false, summary?.emailKnown)
+    check(
+      'and no relationship is claimed, since nothing could be looked up',
+      summary?.crm === undefined,
+      summary?.crm,
+    )
+    check(
+      'the guide asks for an address instead of confirming',
+      messages.some((m) => (m.text ?? '').includes('best email to use')),
+      messages.map((m) => m.text),
+    )
+    check(
+      'and never claims the callback is arranged before it has one',
+      !messages.some((m) => /callback request/i.test(m.text ?? '') && !/best email/i.test(m.text ?? '')),
+      messages.map((m) => m.text),
+    )
+
+    const confirmation = messages.find((m) => (m.text ?? '').includes('jo.baker@helioretail.com'))
+    check('once given, the request is confirmed against it', Boolean(confirmation), messages.map((m) => m.text))
+
+    const last = [...messages].reverse().find((m) => m.data?._visitor)?.data._visitor
+    check('the address is recorded', last?.email === 'jo.baker@helioretail.com', last?.email)
+    // The lookup re-runs on the new domain, so a visitor who skipped the introduction can still
+    // be matched. Their OWN answer to the vertical question must survive it.
+    check('their own vertical is not overwritten by the account record', last?.industry === 'Insurance', last?.industry)
+    check('and is still marked self-reported', last?.industrySource === 'asked', last?.industrySource)
   }
 
   console.log('\nconversation: NiCE employee, own knowledge')

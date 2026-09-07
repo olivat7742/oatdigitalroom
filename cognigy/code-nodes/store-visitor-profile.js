@@ -16,9 +16,18 @@
 // deliberately NOT set: the agent shows a privacy notice but never asks for affirmative
 // consent, and recording consent that was never given would be a false record.
 
-const CORE_FIELDS = ['firstName', 'lastName', 'company', 'jobTitle', 'email'];
+// What the introduction actually REQUIRES. A surname is deliberately not on this list.
+//
+// Nothing in the product needs one: the visitor is addressed by their first name, the company
+// is display-only, and the identifier that matters is the email domain. Requiring it produced
+// the worst kind of question, one the agent asks because a field is empty rather than because
+// the answer is useful, and live it asked a visitor called "Marc Delaunay" for his last name
+// immediately after he had given it. Still captured when volunteered, just never demanded.
+const CORE_FIELDS = ['firstName', 'company', 'jobTitle', 'email'];
 const EXTRA_FIELDS = ['department', 'interest'];
-const ALL_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website', 'industry', 'industrySource']);
+// lastName is listed here and in ARG_FIELDS but NOT in CORE_FIELDS: accepted and emitted when
+// we have it, never a reason to ask a question.
+const ALL_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['lastName', 'website', 'industry', 'industrySource']);
 
 // What the model is allowed to SUPPLY, which is not the same as what gets emitted.
 //
@@ -27,7 +36,7 @@ const ALL_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website', 'industry
 // argument would let the model assert that a vertical came from an account record when the
 // visitor simply typed it, and the whole reason the field exists is that those deserve
 // different trust.
-const ARG_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['website', 'industry']);
+const ARG_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['lastName', 'website', 'industry']);
 
 // The twelve verticals NiCE itself filters by, in NiCE's own order.
 //
@@ -80,6 +89,19 @@ ARG_FIELDS.concat(WORKING_FIELDS).forEach(function (field) {
   const value = clean(args[field]);
   if (value !== '') { merged[field] = value; }
 });
+
+// A visitor who answers "Marc Delaunay" usually arrives here as firstName="Marc Delaunay" with
+// no lastName, and the agent then thanks "Marc Delaunay" by their full name in every reply.
+// Split on the FIRST space, so the given name is the first token: "Maria del Carmen Rodriguez"
+// keeps Maria as the name to address her by, which is the part that gets used. Done here
+// rather than left to the model because it is not a judgement, and twin of the same split in
+// app/src/transport/MockTransport.ts.
+if (clean(merged.lastName) === '' && /\s/.test(clean(merged.firstName))) {
+  const whole = clean(merged.firstName);
+  const cut = whole.indexOf(' ');
+  merged.firstName = whole.slice(0, cut);
+  merged.lastName = whole.slice(cut + 1).trim();
+}
 
 const domain = emailDomain(merged.email);
 const emailIsPersonal = domain !== '' && GENERIC_EMAIL_DOMAINS.indexOf(domain) !== -1;
@@ -175,7 +197,7 @@ const industryDeclined = merged.industryAsked === true && !industryKnown;
 // Five questions covering seven fields, plus a sixth only when the email identifies no
 // employer. Name, and company plus role, are each asked once.
 const QUESTION_PLAN = [
-  { needs: ['firstName', 'lastName'], ask: 'Ask for their name.' },
+  { needs: ['firstName'], ask: 'Ask for their name. Whatever they give is enough: do NOT follow up asking for a surname.' },
   { needs: ['company', 'jobTitle'], ask: 'Ask where they work and what their role is there. One question, both answers.' },
   { needs: ['email'], ask: 'Ask for their business email, and say plainly it is so you can follow up or send them anything they want to keep.' }
 ];

@@ -172,6 +172,40 @@ console.log('\nstore_visitor_profile: when the vertical is asked')
   )
 }
 
+// Live, the agent asked "Marc Delaunay" for his last name in the reply that thanked him by
+// his full name. The plan step required firstName AND lastName, the model had put the whole
+// string in firstName, so the step stayed outstanding and came round again.
+console.log('\nstore_visitor_profile: the name')
+{
+  const full = runProfile({ firstName: 'Marc Delaunay' })
+  check('a full name in one field is split', full.result.known.firstName === 'Marc', full.result.known)
+  check('and the surname kept', full.result.known.lastName === 'Delaunay', full.result.known)
+  check(
+    'so the name is NOT asked again',
+    !/name/i.test(full.result.nextQuestion ?? ''),
+    full.result.nextQuestion,
+  )
+
+  // Given names of more than one word exist, and the first token is the part used to address
+  // someone, so the split favours getting that right.
+  const compound = runProfile({ firstName: 'Maria del Carmen Rodriguez' })
+  check('a longer name keeps the first token as the given name', compound.result.known.firstName === 'Maria', compound.result.known)
+
+  const firstOnly = runProfile({ firstName: 'Marc' })
+  check('a first name alone is accepted', firstOnly.result.known.firstName === 'Marc')
+  check('with no surname invented', firstOnly.result.known.lastName === undefined, firstOnly.result.known.lastName)
+  check(
+    'and the plan moves on rather than demanding one',
+    !/name/i.test(firstOnly.result.nextQuestion ?? ''),
+    firstOnly.result.nextQuestion,
+  )
+  check(
+    'a surname is never listed as missing',
+    !firstOnly.result.missingCore.includes('lastName'),
+    firstOnly.result.missingCore,
+  )
+}
+
 console.log('\nstore_visitor_profile: recording the answer')
 {
   const base = { firstName: 'Sam', lastName: 'Reyes', company: 'Quietfield', jobTitle: 'Ops Lead', email: 'sam@quietfield.com', department: 'Ops', interest: 'WFM' }

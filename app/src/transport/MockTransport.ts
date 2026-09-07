@@ -24,6 +24,15 @@ import type { Cta, StageSummary, SummaryTopic, ViewedAsset } from '@/types/stage
  */
 const FOLLOWUP = /^(please email me documentation links|i would like to speak with a nice sales representative|please arrange a callback)/i
 
+/**
+ * Whether a string actually looks like an address, used instead of "the field is not empty".
+ *
+ * A visitor can answer the email question with "I'd rather not say", and the panel then told
+ * them their links had been "sent to the address you gave earlier". Deliberately loose: this
+ * decides whether to ASK again, not whether to trust the address.
+ */
+const EMAIL_SHAPED = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i
+
 /** Farewells that should close with the summary rather than be searched for in the catalog. */
 const FAREWELL = /^\s*(bye|goodbye|good bye|see you|see ya|thanks,? that'?s all|that'?s all|that is all|i'?m done|im done|we'?re done|no thanks,? bye|ciao|au revoir|merci,? au revoir|end|finish|wrap up|that will be all)\b/i
 
@@ -146,6 +155,15 @@ export class MockTransport implements Transport {
   private crmResolved = false
 
   /**
+   * A follow-up the visitor asked for that cannot be actioned until we have an address.
+   *
+   * The summary panel's buttons stay enabled without one, on purpose: a gate blocks and a
+   * prompt converts, and the moment someone asks for a callback is the moment they will hand
+   * over an email. This holds what they asked for while the guide asks for it.
+   */
+  private pendingFollowUp: string | null = null
+
+  /**
    * Assets actually put on the stage, in order, deduplicated.
    *
    * Recorded from the outgoing directives rather than from the matcher, so every path that
@@ -195,6 +213,13 @@ export class MockTransport implements Transport {
     // to, not have "bye" filed as their department.
     if (FAREWELL.test(text)) {
       this.replay(this.wrapUp())
+      return
+    }
+
+    // An address we are waiting on, before the topic matchers, or "olivier@nice.com" would be
+    // run through catalog search and answered with a video.
+    if (this.pendingFollowUp && EMAIL_SHAPED.test(text)) {
+      this.replay(this.captureFollowUpEmail(text))
       return
     }
 
@@ -346,7 +371,8 @@ export class MockTransport implements Transport {
     const audience = this.visitor['audience']
     const hasSubject =
       audience === 'nice-internal' ||
-      Boolean(this.visitor['email'] || this.visitor['website'] || this.visitor['onBehalfOfWebsite'])
+      EMAIL_SHAPED.test(this.visitor['email'] ?? '') ||
+      Boolean(this.visitor['website'] || this.visitor['onBehalfOfWebsite'])
     if (!hasSubject) return
 
     this.crmResolved = true
@@ -355,7 +381,10 @@ export class MockTransport implements Transport {
     // Recorded as the canonical label, never the raw CRM string. Marked 'crm' so a reader can
     // tell a looked-up vertical from one the visitor chose themselves, which deserve different
     // trust: one came from an account record, the other from a stranger picking a button.
-    if (this.crm.industry) {
+    // Only when we do not already have one. Reachable because the lookup can now run a second
+    // time, after a late email: the visitor's own answer must not be overwritten by a CRM
+    // record that disagrees with them. Mirrors the same guard in the Cognigy node.
+    if (this.crm.industry && !this.visitor['industry']) {
       this.visitor['industry'] = this.crm.industry.label
       this.visitor['industrySource'] = 'crm'
     }
@@ -566,7 +595,10 @@ export class MockTransport implements Transport {
       headline: name ? `Thanks, ${name}.` : 'Thanks for visiting.',
       viewed: this.viewed,
       topics: topics.slice(0, 8),
-      emailKnown: Boolean(this.visitor['email']),
+      // Shape-checked, not merely present. Answering the email question "I'd rather not say"
+      // filled the field, and the panel then told the visitor their links had been sent to the
+      // address they gave earlier.
+      emailKnown: EMAIL_SHAPED.test(this.visitor['email'] ?? ''),
       ...(crm ? { crm } : {}),
     }
 
@@ -590,13 +622,74 @@ export class MockTransport implements Transport {
    */
   private acknowledgeFollowUp(text: string): ScriptedStep[] {
     const lower = text.toLowerCase()
-    const reply = lower.startsWith('please email me')
-      ? 'Noted. In the live version that sends the documentation links to your email. This build does not send mail, so nothing has actually gone out.'
+    const kind = lower.startsWith('please email me')
+      ? 'email'
       : lower.startsWith('please arrange a callback')
-        ? 'Noted. In the live version this creates a callback request for a Solutions Engineer. This build does not route anything yet.'
-        : 'Noted. In the live version this hands you to a Solutions Engineer in CXone Digital, carrying everything you looked at. This build does not route anything yet.'
+        ? 'callback'
+        : 'rep'
+
+    // No address, so ask for one instead of confirming something nobody can do. The request is
+    // remembered rather than discarded: they asked once and should not have to ask again.
+    if (!EMAIL_SHAPED.test(this.visitor['email'] ?? '')) {
+      this.pendingFollowUp = kind
+      const what =
+        kind === 'email'
+          ? 'send those links'
+          : kind === 'callback'
+            ? 'arrange that callback'
+            : 'put you in touch with someone'
+      return [
+        {
+          delayMs: 550,
+          message: {
+            text: `Happy to. I do not have an address for you yet, so I cannot ${what}. What is the best email to use?`,
+          },
+        },
+      ]
+    }
+
+    const reply =
+      kind === 'email'
+        ? 'Noted. In the live version that sends the documentation links to your email. This build does not send mail, so nothing has actually gone out.'
+        : kind === 'callback'
+          ? 'Noted. In the live version this creates a callback request for a Solutions Engineer. This build does not route anything yet.'
+          : 'Noted. In the live version this hands you to a Solutions Engineer in CXone Digital, carrying everything you looked at. This build does not route anything yet.'
 
     return [{ delayMs: 550, message: { text: reply } }]
+  }
+
+  /**
+   * Records the address the guide just asked for, and confirms the request it was blocking.
+   *
+   * The CRM lookup is re-run, because the domain is the one thing that identifies the company
+   * and we did not have it before. Someone who skipped the introduction entirely can therefore
+   * still end up correctly matched to their account.
+   */
+  private captureFollowUpEmail(text: string): ScriptedStep[] {
+    const address = EMAIL_SHAPED.exec(text)?.[0] ?? ''
+    const kind = this.pendingFollowUp
+    this.pendingFollowUp = null
+    this.visitor['email'] = address
+
+    this.crmResolved = false
+    this.resolveCrm()
+
+    const what =
+      kind === 'email'
+        ? 'the documentation links go to that address'
+        : kind === 'callback'
+          ? 'a Solutions Engineer requests the callback on that address'
+          : 'a Solutions Engineer picks this up on that address'
+
+    return [
+      {
+        delayMs: 550,
+        message: {
+          text: `Thank you, noted against ${address}. In the live version ${what}, carrying everything you looked at. This build does not send or route anything yet.`,
+          data: this.visitorPayload(true),
+        },
+      },
+    ]
   }
 
   private replay(steps: ScriptedStep[]): void {
