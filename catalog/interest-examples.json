@@ -1,0 +1,82 @@
+{
+  "notes": "Example answers offered as buttons on the LAST introduction question, the one that asks what kind of solution the visitor is looking at. Chosen by their department, falling back to their role. Read by app/src/interestExamples.ts, and copied into the OAT_DIGITAL_ROOM_store_visitor_profile Code node in Cognigy, which has no HTTP fetch in front of it and so cannot read this file.",
+  "why": "That question asks a stranger to compose a sentence about what they want, which is the hardest question in the introduction and the one most likely to produce a shrug. An example they can tap costs them nothing and gives retrieval something specific to work with. The visitor can still ignore all of them and type whatever they like: these are examples, not a menu.",
+  "guarantee": "EVERY value here must return at least one asset from the catalog. tools/test-interest-examples.mjs asserts that against the real searchCatalog and fails the build otherwise, which is what protects the live agent. The portal additionally filters at runtime, so an example that stopped matching would simply not be offered. An example button that leads nowhere is worse than no button.",
+  "notAssetTitles": "These are PHRASINGS, not asset names. Offering three asset titles here would narrow the visitor to our content before we know what they came for, and it would make the interest field a title rather than their goal. find_demo offers titles later, once there is an intent to search on.",
+  "version": "1.0.0",
+
+  "groups": [
+    {
+      "key": "wfm",
+      "match": ["workforce", "wfm", "scheduling", "schedule", "forecast", "planning", "hr", "human resources", "shift"],
+      "examples": [
+        { "label": "Forecasting and scheduling", "value": "AI for forecasting and scheduling" },
+        { "label": "Human and AI in one team", "value": "Managing human and AI agents in one team" },
+        { "label": "Engagement and shift swaps", "value": "Employee engagement and shift flexibility" }
+      ]
+    },
+    {
+      "key": "quality",
+      "match": ["quality", "compliance", "risk", "legal", "audit", "qa"],
+      "examples": [
+        { "label": "Automated quality scoring", "value": "Automated quality scoring with GenAI" },
+        { "label": "Outbound calling rules", "value": "Outbound compliance and calling rules" },
+        { "label": "Quality in a BPO", "value": "Quality management in a BPO" }
+      ]
+    },
+    {
+      "key": "analytics",
+      "match": ["analytic", "analytics", "insight", "data", "reporting", "bi", "intelligence"],
+      "examples": [
+        { "label": "Analytics to action", "value": "Turning analytics into automated actions" },
+        { "label": "Real time insight", "value": "Real time insights from every interaction" },
+        { "label": "AI guided analytics", "value": "AI guided analytics" }
+      ]
+    },
+    {
+      "key": "it",
+      "match": ["it", "information technology", "architect", "architecture", "engineer", "engineering", "platform", "developer", "technical", "cto", "cio"],
+      "examples": [
+        { "label": "Building an AI agent", "value": "How do I actually build an AI agent?" },
+        { "label": "AI without replacing my ACD", "value": "Adding AI without replacing my ACD" },
+        { "label": "Unified data", "value": "Unified data and smarter actions" }
+      ]
+    },
+    {
+      "key": "growth",
+      "match": ["sales", "marketing", "growth", "outbound", "collections", "revenue", "campaign"],
+      "examples": [
+        { "label": "How outbound works", "value": "How does outbound engagement work?" },
+        { "label": "Campaign compliance", "value": "Proactive outreach and campaign compliance" },
+        { "label": "Outbound as growth", "value": "Outbound as a growth channel" }
+      ]
+    },
+    {
+      "key": "exec",
+      "match": ["chief", "vp", "vice president", "executive", "transformation", "strategy", "board"],
+      "examples": [
+        { "label": "What analysts say", "value": "What do analysts say about NiCE for CCaaS?" },
+        { "label": "Scaling AI", "value": "Scaling AI across the business" },
+        { "label": "CX trends for 2026", "value": "CX technology trends for 2026" }
+      ]
+    },
+    {
+      "key": "service",
+      "match": ["service", "support", "care", "contact center", "contact centre", "call center", "call centre", "customer experience", "cx", "operations", "ops"],
+      "examples": [
+        { "label": "Helping agents live", "value": "How do you help agents during a conversation?" },
+        { "label": "Self service that works", "value": "Self service that contains the call" },
+        { "label": "AI as the front door", "value": "Agentic AI as the front door to customer service" }
+      ]
+    }
+  ],
+
+  "fallback": {
+    "why": "Used when neither the department nor the role matches a group, which is common: 'Innovation', 'Digital', a blank answer. The three pillars of the room, so the visitor always has somewhere to start.",
+    "examples": [
+      { "label": "Helping agents live", "value": "How do you help agents during a conversation?" },
+      { "label": "The supervisor view", "value": "What does the supervisor experience look like?" },
+      { "label": "How outbound works", "value": "How does outbound engagement work?" }
+    ]
+  }
+}

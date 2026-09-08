@@ -206,6 +206,41 @@ try {
     )
   }
 
+  // The hardest question in the introduction is the one that asks a stranger to compose a
+  // sentence about what they want. It now carries three tappable examples chosen from their
+  // department and role, filtered against the real catalog.
+  console.log('\nexample answers on the interest question')
+  {
+    const { messages } = await converse(MockTransport, [
+      'Camille Dubois',
+      'Vantage Bank, Head of Workforce Planning',
+      'camille@vantagebank.com',
+      'Workforce management / HR',
+      'AI for forecasting and scheduling',
+    ])
+
+    const asked = messages.find((m) => (m.text ?? '').includes('kind of solution'))
+    check('the question is asked', Boolean(asked), messages.map((m) => m.text))
+    const cta = asked?.data?._showroom?.cta ?? []
+    check('with three example answers', cta.length === 3, cta)
+    check(
+      'chosen from the department, not generic',
+      cta.some((c) => /forecasting and scheduling/i.test(c.value)),
+      cta,
+    )
+    check('offered without disturbing the stage', asked?.data?._showroom?.action === 'offer')
+    check(
+      'and the question still invites their own words',
+      /own words/i.test(asked?.text ?? ''),
+      asked?.text,
+    )
+    check(
+      'while not naming the examples in the prose',
+      !cta.some((c) => (asked?.text ?? '').includes(c.value)),
+      asked?.text,
+    )
+  }
+
   console.log('\nconversation: external visitor at a KNOWN account')
   {
     // Northwind's CRM industry is "Transportation and Warehousing", which has no NiCE vertical

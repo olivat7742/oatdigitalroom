@@ -191,6 +191,12 @@ console.log('\nstore_visitor_profile: the name')
   const compound = runProfile({ firstName: 'Maria del Carmen Rodriguez' })
   check('a longer name keeps the first token as the given name', compound.result.known.firstName === 'Maria', compound.result.known)
 
+  // Live, the model passed BOTH firstName "Camille DUBOIS" and lastName "DUBOIS", so a split
+  // guarded on the empty lastName skipped and every reply addressed her by her full name.
+  const both = runProfile({ firstName: 'Camille DUBOIS', lastName: 'DUBOIS' })
+  check('a full name is trimmed even when the surname was also passed', both.result.known.firstName === 'Camille', both.result.known)
+  check('and the surname is left alone', both.result.known.lastName === 'DUBOIS', both.result.known)
+
   const firstOnly = runProfile({ firstName: 'Marc' })
   check('a first name alone is accepted', firstOnly.result.known.firstName === 'Marc')
   check('with no surname invented', firstOnly.result.known.lastName === undefined, firstOnly.result.known.lastName)

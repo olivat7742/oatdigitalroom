@@ -47,6 +47,79 @@ const ARG_FIELDS = CORE_FIELDS.concat(EXTRA_FIELDS).concat(['lastName', 'website
 // recognise is which of the twelve buttons the visitor tapped.
 const INDUSTRY_LABELS = ['Insurance','Financial','Healthcare','Retail','Telecom','Utilities','Government','Education','BPO','Technology','Travel & Hospitality','Automotive'];
 
+// Example answers for the LAST question, the one asking what solution they are looking at.
+//
+// Copied from catalog/interest-examples.json, which is the authority, because this node has no
+// HTTP fetch in front of it and cannot read the file. tools/test-interest-examples.mjs asserts
+// the copy matches, so the duplication has an alarm on it.
+//
+// That test also asserts EVERY value here still returns an asset from the catalog. The portal
+// filters at runtime and so can never offer a dud; this node cannot search, so the test is
+// what protects it. An example button that leads nowhere is worse than no button: the visitor
+// taps a suggestion the room made and the room says it has nothing.
+//
+// These are PHRASINGS, not asset titles. Three titles here would narrow the visitor to our
+// content before we know what they came for. find_demo offers titles later.
+const INTEREST_GROUPS = [
+  { key: 'wfm',
+    match: ['workforce', 'wfm', 'scheduling', 'schedule', 'forecast', 'planning', 'hr', 'human resources', 'shift'],
+    examples: [
+      { label: 'Forecasting and scheduling', value: 'AI for forecasting and scheduling' },
+      { label: 'Human and AI in one team', value: 'Managing human and AI agents in one team' },
+      { label: 'Engagement and shift swaps', value: 'Employee engagement and shift flexibility' }
+    ] },
+  { key: 'quality',
+    match: ['quality', 'compliance', 'risk', 'legal', 'audit', 'qa'],
+    examples: [
+      { label: 'Automated quality scoring', value: 'Automated quality scoring with GenAI' },
+      { label: 'Outbound calling rules', value: 'Outbound compliance and calling rules' },
+      { label: 'Quality in a BPO', value: 'Quality management in a BPO' }
+    ] },
+  { key: 'analytics',
+    match: ['analytic', 'analytics', 'insight', 'data', 'reporting', 'bi', 'intelligence'],
+    examples: [
+      { label: 'Analytics to action', value: 'Turning analytics into automated actions' },
+      { label: 'Real time insight', value: 'Real time insights from every interaction' },
+      { label: 'AI guided analytics', value: 'AI guided analytics' }
+    ] },
+  { key: 'it',
+    match: ['it', 'information technology', 'architect', 'architecture', 'engineer', 'engineering', 'platform', 'developer', 'technical', 'cto', 'cio'],
+    examples: [
+      { label: 'Building an AI agent', value: 'How do I actually build an AI agent?' },
+      { label: 'AI without replacing my ACD', value: 'Adding AI without replacing my ACD' },
+      { label: 'Unified data', value: 'Unified data and smarter actions' }
+    ] },
+  { key: 'growth',
+    match: ['sales', 'marketing', 'growth', 'outbound', 'collections', 'revenue', 'campaign'],
+    examples: [
+      { label: 'How outbound works', value: 'How does outbound engagement work?' },
+      { label: 'Campaign compliance', value: 'Proactive outreach and campaign compliance' },
+      { label: 'Outbound as growth', value: 'Outbound as a growth channel' }
+    ] },
+  { key: 'exec',
+    match: ['chief', 'vp', 'vice president', 'executive', 'transformation', 'strategy', 'board'],
+    examples: [
+      { label: 'What analysts say', value: 'What do analysts say about NiCE for CCaaS?' },
+      { label: 'Scaling AI', value: 'Scaling AI across the business' },
+      { label: 'CX trends for 2026', value: 'CX technology trends for 2026' }
+    ] },
+  { key: 'service',
+    match: ['service', 'support', 'care', 'contact center', 'contact centre', 'call center', 'call centre', 'customer experience', 'cx', 'operations', 'ops'],
+    examples: [
+      { label: 'Helping agents live', value: 'How do you help agents during a conversation?' },
+      { label: 'Self service that works', value: 'Self service that contains the call' },
+      { label: 'AI as the front door', value: 'Agentic AI as the front door to customer service' }
+    ] }
+];
+
+// Used when neither the department nor the role matches, which is common: "Innovation",
+// "Digital", a blank answer. The three pillars of the room, so there is always somewhere to go.
+const INTEREST_FALLBACK = [
+  { label: 'Helping agents live', value: 'How do you help agents during a conversation?' },
+  { label: 'The supervisor view', value: 'What does the supervisor experience look like?' },
+  { label: 'How outbound works', value: 'How does outbound engagement work?' }
+];
+
 // Answers used to steer the introduction but NOT part of the visitor contract. Kept separate
 // because contracts/visitor-payload.schema.json sets additionalProperties false, so emitting
 // these raw would produce a payload that fails its own contract.
@@ -96,11 +169,15 @@ ARG_FIELDS.concat(WORKING_FIELDS).forEach(function (field) {
 // keeps Maria as the name to address her by, which is the part that gets used. Done here
 // rather than left to the model because it is not a judgement, and twin of the same split in
 // app/src/transport/MockTransport.ts.
-if (clean(merged.lastName) === '' && /\s/.test(clean(merged.firstName))) {
+// Runs whenever firstName holds more than one word, NOT only when lastName is missing. Live,
+// the model passed firstName "Camille DUBOIS" together with lastName "DUBOIS", so a guard on
+// the empty lastName skipped and every reply addressed her as "Camille DUBOIS".
+if (/\s/.test(clean(merged.firstName))) {
   const whole = clean(merged.firstName);
   const cut = whole.indexOf(' ');
+  const rest = whole.slice(cut + 1).trim();
   merged.firstName = whole.slice(0, cut);
-  merged.lastName = whole.slice(cut + 1).trim();
+  if (clean(merged.lastName) === '' && rest !== '') { merged.lastName = rest; }
 }
 
 const domain = emailDomain(merged.email);
@@ -194,8 +271,7 @@ if (industryAnswered && merged.industrySource !== 'crm') {
 const industryKnown = clean(merged.industry) !== '';
 const industryDeclined = merged.industryAsked === true && !industryKnown;
 
-// Five questions covering seven fields, plus a sixth only when the email identifies no
-// employer. Name, and company plus role, are each asked once.
+// Four questions covering six fields, plus a fifth only when the email identifies no employer.
 const QUESTION_PLAN = [
   { needs: ['firstName'], ask: 'Ask for their name. Whatever they give is enough: do NOT follow up asking for a surname.' },
   { needs: ['company', 'jobTitle'], ask: 'Ask where they work and what their role is there. One question, both answers.' },
@@ -228,10 +304,10 @@ if (isNiceEmployee) {
 }
 
 QUESTION_PLAN.push({ needs: ['department'], ask: 'Ask which department or team the project is for. It may not be their own.' });
-QUESTION_PLAN.push({ needs: ['interest'], ask: 'Ask what kind of solution they are looking at, in their own words.' });
+QUESTION_PLAN.push({ needs: ['interest'], ask: 'Ask what kind of solution they are looking at, in their own words. Three example answers appear as BUTTONS automatically, so do NOT list, name or hint at any of them, but do add that they can tap one or describe it themselves.' });
 
-// The vertical, asked ONLY when nothing has answered it: no CRM match, an unmappable CRM
-// industry, or a colleague browsing for their own knowledge, for whom nothing is looked up.
+// The vertical, asked ONLY when nothing has answered it: no CRM match, or an unmappable CRM
+// industry.
 //
 // LAST, not at the point the company becomes known, even though that is where the decision is
 // really made. lookup_crm is a separate tool call the model has to choose to make, and putting
@@ -349,8 +425,57 @@ try {
 // here rather than beside the guidance below, because it decides both.
 const crmLookupPending = !complete && audienceIsProspect && !crmResolved && Boolean(lookupWebsite);
 
+// Whole-word match, not containment. 'it' is a keyword and appears inside 'quality', 'digital'
+// and half the language, so substring matching would send a quality manager to the IT examples.
+function mentionsWord(haystack, keyword) {
+  const escaped = String(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('\\b' + escaped + '\\b', 'i').test(String(haystack || ''));
+}
+
+// The DEPARTMENT decides, falling back to the role. The question is which department the
+// project is for, which says more about what they need than their seniority does: a VP of Sales
+// asking on behalf of the service team should get service examples.
+function interestExamples(department, jobTitle) {
+  const texts = [clean(department), clean(jobTitle)];
+  for (let t = 0; t < texts.length; t++) {
+    if (texts[t] === '') { continue; }
+    for (let g = 0; g < INTEREST_GROUPS.length; g++) {
+      const group = INTEREST_GROUPS[g];
+      for (let k = 0; k < group.match.length; k++) {
+        if (mentionsWord(texts[t], group.match[k])) { return group.examples; }
+      }
+    }
+  }
+  return INTEREST_FALLBACK;
+}
+
 const askingIndustryNow =
   nextStep !== null && nextStep.fields.indexOf('industry') !== -1 && !crmLookupPending;
+
+// Examples for the interest question, as BUTTONS.
+//
+// Composing a sentence about what you want is the hardest question in the introduction and the
+// likeliest to produce a shrug, so the room offers three tappable starting points chosen from
+// the department and role. They are examples, not a menu: the visitor can ignore all three and
+// type anything, and the question says so.
+//
+// Same one-set-of-buttons-per-turn rule as the vertical question. This is the last question
+// before the introduction completes, so nothing else emits a cta in the same turn.
+const askingInterestNow = nextStep !== null && nextStep.fields.indexOf('interest') !== -1;
+if (askingInterestNow) {
+  try {
+    actions.output(null, {
+      _showroom: {
+        v: 1,
+        action: 'offer',
+        cta: interestExamples(merged.department, merged.jobTitle).map(function (e) {
+          return { label: e.label, value: e.value, kind: 'quick_reply' };
+        })
+      }
+    });
+  } catch (e) { /* they can still type it; not worth failing the turn */ }
+}
+
 if (askingIndustryNow) {
   try {
     actions.output(null, {
@@ -414,8 +539,8 @@ if (crmLookupPending) {
     : ' Before you ask it, call OAT_DIGITAL_ROOM_lookup_crm ONCE with crmLookupWebsite as companyWebsite, unless you already called it this conversation. Say nothing about that lookup to the visitor.';
 }
 
-// The vertical question's buttons must be the LAST buttons of the turn, or they answer a
-// question the visitor is not being asked.
+// A question's buttons must be the LAST buttons of the turn, or they answer a question the
+// visitor is not being asked. Applies to the interest question too, which also has buttons.
 //
 // Observed live: a visitor asked for a demo mid-introduction, so this node emitted the twelve
 // industry options and then find_demo emitted three asset titles, which replaced them. The
@@ -425,7 +550,7 @@ if (crmLookupPending) {
 //
 // Deferring the content is the right way round: the question is one tap and the demo is still
 // there afterwards, whereas a demo shown now with the wrong buttons under it wastes both.
-if (askingIndustryNow) {
+if (askingIndustryNow || askingInterestNow) {
   lookupNudge += ' This question is the WHOLE turn. Do NOT call OAT_DIGITAL_ROOM_find_demo or OAT_DIGITAL_ROOM_show_demo in this turn, even if the visitor just asked to see something: its suggestions would replace this question\'s buttons and leave the visitor answering the wrong question. If they asked for content, say in one clause that you will bring it up next, then ask this.';
 }
 
@@ -437,6 +562,7 @@ input.result = {
   industry: clean(merged.industry) || null,
   industrySource: clean(merged.industrySource) || null,
   askingIndustry: askingIndustryNow,
+  askingInterest: askingInterestNow,
   crmLookupWebsite: lookupWebsite || null,
   companyDomain: merged.website ? clean(merged.website) : (emailIsPersonal ? null : (domain || null)),
   emailIsPersonalProvider: emailIsPersonal,

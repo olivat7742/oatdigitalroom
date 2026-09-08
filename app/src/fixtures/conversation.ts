@@ -103,7 +103,14 @@ export const ONBOARDING: OnboardingStep[] = [
       'What is your business email? It is so I can follow up, or send you anything you want to keep.',
   },
   { fields: ['department'], question: 'Which department or team is this project for? It need not be your own.' },
-  { fields: ['interest'], question: 'Last one. What kind of solution are you looking at, in your own words?' },
+  // The buttons for this one are computed per visitor from their department and role, and
+  // filtered against the catalog, so they cannot be a fixed cta on the step. See
+  // MockTransport.ctaForQuestion.
+  {
+    fields: ['interest'],
+    question:
+      'Last one. What kind of solution are you looking at? Tap an example if one fits, or describe it in your own words.',
+  },
 ]
 
 /**

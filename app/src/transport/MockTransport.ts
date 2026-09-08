@@ -13,6 +13,7 @@ import {
 import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
 import { isNiceEmployee, lookupCrm, type CrmLookupResult } from '@/crm'
 import { industryByLabel } from '@/industries'
+import { exampleInterests } from '@/interestExamples'
 import type { Cta, StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
 
 /**
@@ -284,6 +285,7 @@ export class MockTransport implements Transport {
 
     const next = this.plan[this.onboardingStep]
     if (next) {
+      const cta = next.cta ?? this.ctaForQuestion(next)
       return [
         {
           delayMs: 550,
@@ -293,7 +295,7 @@ export class MockTransport implements Transport {
               ...this.visitorPayload(false),
               // 'offer' rather than 'clear': a question with buttons must not blank whatever
               // the visitor is looking at just to offer them a choice.
-              ...(next.cta ? { _showroom: { v: 1, action: 'offer', cta: next.cta } } : {}),
+              ...(cta ? { _showroom: { v: 1, action: 'offer', cta } } : {}),
             },
           },
         },
@@ -301,6 +303,26 @@ export class MockTransport implements Transport {
     }
 
     return this.introductionComplete()
+  }
+
+  /**
+   * Buttons for a question whose choices depend on what the visitor has already said.
+   *
+   * Only the interest question needs this. Its options are chosen from the department and role,
+   * so they cannot be fixed on the step the way the twelve industries are, and they are filtered
+   * against the real catalog first: an example that no longer matches anything is not offered.
+   */
+  private ctaForQuestion(step: OnboardingStep): Cta[] | null {
+    if (!step.fields.includes('interest')) return null
+
+    const examples = exampleInterests(this.visitor['department'], this.visitor['jobTitle'])
+    if (examples.length === 0) return null
+
+    return examples.map((example) => ({
+      label: example.label,
+      value: example.value,
+      kind: 'quick_reply' as const,
+    }))
   }
 
   /**
