@@ -78,16 +78,33 @@ try {
     )
   }
 
-  console.log('\nthe department decides, the role is the fallback')
+  console.log('\nthe department and the role are BOTH consulted')
   {
-    // The exact case from the screenshot that prompted this.
     const wfm = exampleInterests('Workforce management / HR', 'head of Workforce Planning')
     check('a workforce department gets workforce examples', wfm.some((e) => /forecasting/i.test(e.value)), wfm)
     check('and three of them', wfm.length === 3, wfm)
 
-    // Department beats seniority: the question is which department the project is for.
-    const vp = exampleInterests('Customer service', 'VP Sales')
-    check('the department wins over the job title', vp.some((e) => /agents during a conversation/i.test(e.value)), vp)
+    // THE CASE THAT PROMPTED THE BLEND. A head of WFM whose project is for the "Contact center"
+    // used to get three generic service examples and nothing about workforce management: the
+    // department matched the broad service group first and her role was never looked at.
+    const blended = exampleInterests('Contact center', 'head of WFM')
+    check(
+      'a head of WFM in a contact centre gets WFM examples',
+      blended.some((e) => /forecasting|shift|human and ai/i.test(e.value)),
+      blended,
+    )
+    check(
+      'and the contact centre angle is still represented',
+      blended.some((e) => /agents during a conversation|self service|front door/i.test(e.value)),
+      blended,
+    )
+    check('leading with the specific signal, not the near-universal one', /forecasting/i.test(blended[0]?.value ?? ''), blended)
+    check('still three, and no duplicates', blended.length === 3 && new Set(blended.map((e) => e.value)).size === 3, blended)
+
+    // Two specific signals keep department-then-role order, since neither is near-universal.
+    const twoSpecific = exampleInterests('Quality and compliance', 'Data Analyst')
+    check('two specific matches lead with the department', /quality scoring/i.test(twoSpecific[0]?.value ?? ''), twoSpecific)
+    check('and still blend in the role', twoSpecific.some((e) => /analytics|insight/i.test(e.value)), twoSpecific)
 
     const roleOnly = exampleInterests('', 'Chief Technology Officer')
     check('with no department, the role decides', roleOnly.length === 3, roleOnly)

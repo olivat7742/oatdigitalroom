@@ -432,21 +432,55 @@ function mentionsWord(haystack, keyword) {
   return new RegExp('\\b' + escaped + '\\b', 'i').test(String(haystack || ''));
 }
 
-// The DEPARTMENT decides, falling back to the role. The question is which department the
-// project is for, which says more about what they need than their seniority does: a VP of Sales
-// asking on behalf of the service team should get service examples.
-function interestExamples(department, jobTitle) {
-  const texts = [clean(department), clean(jobTitle)];
-  for (let t = 0; t < texts.length; t++) {
-    if (texts[t] === '') { continue; }
-    for (let g = 0; g < INTEREST_GROUPS.length; g++) {
-      const group = INTEREST_GROUPS[g];
-      for (let k = 0; k < group.match.length; k++) {
-        if (mentionsWord(texts[t], group.match[k])) { return group.examples; }
-      }
+function groupFor(text) {
+  if (clean(text) === '') { return null; }
+  for (let g = 0; g < INTEREST_GROUPS.length; g++) {
+    const group = INTEREST_GROUPS[g];
+    for (let k = 0; k < group.match.length; k++) {
+      if (mentionsWord(text, group.match[k])) { return group; }
     }
   }
-  return INTEREST_FALLBACK;
+  return null;
+}
+
+// BOTH the department and the role are consulted, and neither wins outright. The department is
+// the scope of the project, the role is the lens the visitor judges everything through, and
+// three buttons have room for both.
+//
+// A broad group goes LAST even when the department matched it, because it barely narrows
+// anything. That ordering is the fix for a real visitor: a head of WFM whose project was for
+// the "Contact center" got three generic service examples and nothing about workforce
+// management, because the department matched first and her role was never looked at.
+function interestExamples(department, jobTitle) {
+  const found = [];
+  const texts = [clean(department), clean(jobTitle)];
+  for (let t = 0; t < texts.length; t++) {
+    const group = groupFor(texts[t]);
+    if (group && found.indexOf(group) === -1) { found.push(group); }
+  }
+  // Stable, so two specific matches keep department-then-role order.
+  found.sort(function (a, b) { return (a.broad ? 1 : 0) - (b.broad ? 1 : 0); });
+
+  if (found.length === 0) { return INTEREST_FALLBACK; }
+
+  // Interleaved one at a time, so a department and role pointing different ways both get
+  // represented rather than three of one and none of the other.
+  const blended = [];
+  for (let depth = 0; blended.length < 3; depth++) {
+    const before = blended.length;
+    for (let i = 0; i < found.length && blended.length < 3; i++) {
+      const example = found[i].examples[depth];
+      if (!example) { continue; }
+      let seen = false;
+      for (let b = 0; b < blended.length; b++) {
+        if (blended[b].value === example.value) { seen = true; }
+      }
+      if (!seen) { blended.push(example); }
+    }
+    if (blended.length === before) { break; }
+  }
+
+  return blended.length > 0 ? blended : INTEREST_FALLBACK;
 }
 
 const askingIndustryNow =

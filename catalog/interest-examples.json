@@ -3,7 +3,9 @@
   "why": "That question asks a stranger to compose a sentence about what they want, which is the hardest question in the introduction and the one most likely to produce a shrug. An example they can tap costs them nothing and gives retrieval something specific to work with. The visitor can still ignore all of them and type whatever they like: these are examples, not a menu.",
   "guarantee": "EVERY value here must return at least one asset from the catalog. tools/test-interest-examples.mjs asserts that against the real searchCatalog and fails the build otherwise, which is what protects the live agent. The portal additionally filters at runtime, so an example that stopped matching would simply not be offered. An example button that leads nowhere is worse than no button.",
   "notAssetTitles": "These are PHRASINGS, not asset names. Offering three asset titles here would narrow the visitor to our content before we know what they came for, and it would make the interest field a title rather than their goal. find_demo offers titles later, once there is an intent to search on.",
-  "version": "1.0.0",
+  "blended": "The department and the ROLE are both consulted, and the three buttons are interleaved between whichever groups they match. The department is the scope of the project, the role is the lens the visitor will judge everything through, and both belong in the answer. This replaced a department-wins rule that failed on a real visitor: a head of WFM whose project was for the 'Contact center' got three generic service examples and nothing about workforce management, because the department matched first and the role was never looked at.",
+  "broadGroups": "A group marked broad describes almost every visitor to a contact centre showroom, so it is the WEAKER signal and goes second in the blend even when the department matched it. Only 'service' is marked, and that is the whole point: nearly everyone says contact centre, service or operations, so a match there discriminates very little.",
+  "version": "1.1.0",
 
   "groups": [
     {
@@ -62,6 +64,7 @@
     },
     {
       "key": "service",
+      "broad": true,
       "match": ["service", "support", "care", "contact center", "contact centre", "call center", "call centre", "customer experience", "cx", "operations", "ops"],
       "examples": [
         { "label": "Helping agents live", "value": "How do you help agents during a conversation?" },
