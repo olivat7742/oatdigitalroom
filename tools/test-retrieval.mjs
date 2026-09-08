@@ -64,6 +64,33 @@ const CASES = [
   // neither exists. Exact-id assertions are what caught that.
   ['How do you help agents during a conversation?', 'nice-copilot-for-agents'],
   ['What does the supervisor experience look like?', 'supervisor-control-clarity-coaching'],
+
+  // The NiCE World vertical demos. Each of these is the one thing its asset does better than
+  // anything else in the catalog, so if one of them stops answering, the vertical story is
+  // gone and nothing else would say so.
+  //
+  // Adding these 24 assets broke three of the cases above on the first run, all three because
+  // a generic word in a new TITLE outscored the asset that genuinely owns the question. That
+  // is the failure this file exists to catch, and it is why the new content gets locked in
+  // here too rather than just being trusted.
+  ['Do you support Welsh?', 'government-voice-cognigy'],
+  ['How do you detect vulnerability on a call?', 'government-voice-copilot'],
+  ['Can the bot capture a signature or an ID document?', 'government-chat-self-service'],
+  ['Can a patient order a repeat prescription?', 'healthcare-patient-journey'],
+  ['Can the AI send a link during a phone call?', 'telco-voice-channel-switch'],
+  ['Show me the Cognigy to CXone handover', 'fsi-cognigy-to-cxone-handover'],
+  ['How does a pension transfer work?', 'fsi-digital-end-to-end'],
+  ['Do you have anything for a utility company?', 'utilities-chat-end-to-end'],
+  ['Do you have anything for property management?', 'homes-property-management'],
+  ['Anything for landlords and tenants?', 'homes-property-management'],
+
+  // The retail series. Clip 8 is the one to watch: its filename says "Actions", which reads as
+  // workflow automation, but it is unified BI with natural-language querying. The metadata was
+  // wrong until someone watched it, so both phrasings are asserted.
+  ['What does CXone Actions do?', 'retail-8-cxone-actions'],
+  ['Can I ask my data questions in plain English?', 'retail-8-cxone-actions'],
+  ['Show me AI Studio', 'retail-3-cxone-ai-studio'],
+  ['What is Interactions Hub?', 'retail-5-interactions-hub'],
 ]
 
 /** Questions that must return NOTHING, so the agent says it cannot help rather than improvising. */

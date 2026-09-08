@@ -7,7 +7,10 @@
 #   pwsh tools/read-durations.ps1 -MediaDir "D:\elsewhere\Resources"
 
 param(
-  [string]$MediaDir = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSCommandPath)) 'Resources')
+  # Three levels up from tools/read-durations.ps1, so this lands beside the repository rather
+  # than inside it, matching MEDIA_DIR in tools/build-catalog.mjs. It was two levels, which
+  # resolved to <repo>/Resources and made the documented command fail every time.
+  [string]$MediaDir = (Join-Path (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSCommandPath))) 'Resources')
 )
 
 if (-not (Test-Path $MediaDir)) {
@@ -19,20 +22,31 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $outFile = Join-Path $repoRoot 'catalog\durations.json'
 
 $shell = New-Object -ComObject Shell.Application
-$folder = $shell.Namespace((Resolve-Path $MediaDir).Path)
+$root = (Resolve-Path $MediaDir).Path
 
+# Recurse, and key by the path relative to the media root with forward slashes, matching the
+# META keys in tools/build-catalog.mjs. The NiCE World vertical assets are filed one folder per
+# industry, so a flat listing missed all eleven of them.
+#
+# Shell.Application resolves details per directory, so there is one Namespace call per folder
+# rather than one for the whole tree.
 $result = [ordered]@{}
-Get-ChildItem $MediaDir -File | Where-Object { $_.Extension -match '^\.(mp4|mov|m4v|webm)$' } | Sort-Object Name | ForEach-Object {
-  $item = $folder.ParseName($_.Name)
-  # 27 is the System.Media.Duration column, returned as h:mm:ss.
-  $raw = $folder.GetDetailsOf($item, 27)
-  if ($raw -match '(\d+):(\d{2}):(\d{2})') {
-    $seconds = [int]$Matches[1] * 3600 + [int]$Matches[2] * 60 + [int]$Matches[3]
-    $result[$_.Name] = $seconds
-  } else {
-    Write-Warning "Could not read duration for $($_.Name)"
+Get-ChildItem $root -File -Recurse |
+  Where-Object { $_.Extension -match '^\.(mp4|mov|m4v|webm)$' } |
+  Sort-Object FullName |
+  ForEach-Object {
+    $relative = $_.FullName.Substring($root.Length).TrimStart('\', '/').Replace('\', '/')
+    $folder = $shell.Namespace($_.DirectoryName)
+    $item = $folder.ParseName($_.Name)
+    # 27 is the System.Media.Duration column, returned as h:mm:ss.
+    $raw = $folder.GetDetailsOf($item, 27)
+    if ($raw -match '(\d+):(\d{2}):(\d{2})') {
+      $seconds = [int]$Matches[1] * 3600 + [int]$Matches[2] * 60 + [int]$Matches[3]
+      $result[$relative] = $seconds
+    } else {
+      Write-Warning "Could not read duration for $relative"
+    }
   }
-}
 
 $json = $result | ConvertTo-Json -Depth 3
 [System.IO.File]::WriteAllText($outFile, $json + "`n")
