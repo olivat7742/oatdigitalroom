@@ -294,6 +294,25 @@ console.log('\nstore_visitor_profile: a claimed identity from the launch URL')
   check('with the company and email', preConfirmed.result.known.company === 'Northwind Logistics' && preConfirmed.result.known.email === 'dana@northwindlogistics.com', preConfirmed.result.known)
   check('the confirmation is not asked again', preConfirmed.result.askingIdentity === false)
   check('and the department is next', /department or team/i.test(preConfirmed.result.nextQuestion ?? ''), preConfirmed.result.nextQuestion)
+  // Observed live: the portal welcomed Dana and took the confirmation, then the agent's very
+  // next turn opened "Welcome to the NiCE Digital Room..." with the privacy line again, both
+  // of which were already on screen.
+  check(
+    'a pre-identified visitor is not welcomed twice',
+    /ALREADY been welcomed/.test(preConfirmed.result.guidance ?? ''),
+    preConfirmed.result.guidance,
+  )
+  check(
+    'nor told about the privacy policy again',
+    /privacy policy again/.test(preConfirmed.result.guidance ?? ''),
+    preConfirmed.result.guidance,
+  )
+  check(
+    'while an ordinary visitor still gets a normal greeting',
+    !/ALREADY been welcomed/.test(runProfile({}).result.guidance ?? ''),
+    runProfile({}).result.guidance,
+  )
+
   // confirmed:false is the state while the question is still on screen, and must not be trusted.
   const notYet = runProfile({}, {}, { _launch: { ...LAUNCH._launch, confirmed: false } })
   check('confirmed:false is NOT acceptance', notYet.result.identityState === 'pending', notYet.result.identityState)

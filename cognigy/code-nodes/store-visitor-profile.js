@@ -674,6 +674,19 @@ if (askingIndustryNow) {
 // Phrased as an EXAMPLE rather than only a prohibition. Told merely not to list the options,
 // the agent stopped bulleting them and paraphrased all three in a flowing sentence instead,
 // which is the same duplication in prose. A model answer is followed more reliably than a rule.
+// The portal already welcomed this visitor and already took the confirmation, so a second
+// welcome from the agent reads as the room forgetting it has just spoken.
+//
+// Observed live: the portal said "Welcome to the NiCE Digital Room at NiCE World. Welcome back,
+// Dana..." and the agent's very next turn opened "Welcome to the NiCE Digital Room. A few quick
+// questions help me tailor what I show you. The privacy policy is linked just below." Both the
+// greeting and the privacy line are already on screen at that point, and the references block
+// under the portal's own message carries the policy link.
+const alreadyWelcomed = launchPreConfirmed || merged.identityAccepted === 'true';
+const NO_RE_GREET = alreadyWelcomed
+  ? ' They have ALREADY been welcomed and have already confirmed who they are, in a message they can still see. Do NOT greet them, welcome them, introduce the room or mention the privacy policy again. Go straight to the question.'
+  : '';
+
 const CHOICES_ARE_BUTTONS =
   ' The choices appear to the visitor as BUTTONS automatically. Your whole reply is ONE short line that does NOT describe them, exactly like: "Thanks, Camille. Here is where I would start. Tap whichever fits, or ask me anything else." Never list, number, bullet, summarise or hint at what the options are, and never ask which one they want: the buttons do that.';
 
@@ -751,6 +764,6 @@ input.result = {
   introductionComplete: complete,
   nextQuestion: nextStep ? nextStep.ask : null,
   guidance: complete
-    ? completionGuidance
-    : 'Ask ONLY the next question, in your own words, as one short question. Do not stack questions and do not re-ask anything already present in known.' + lookupNudge
+    ? completionGuidance + NO_RE_GREET
+    : 'Ask ONLY the next question, in your own words, as one short question. Do not stack questions and do not re-ask anything already present in known.' + NO_RE_GREET + lookupNudge
 };

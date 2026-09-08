@@ -16,7 +16,8 @@
       "label": "NiCE World",
       "wordmark": "NiCE World",
       "welcome": "Welcome to the NiCE Digital Room at NiCE World.",
-      "paletteProvenance": "Sampled from the rendered https://www.nice.com/websites/nice-world-london page rather than guessed. That page serves nice.com's own CSS custom properties, so the event look lives in its hero rather than in tokens: linear-gradient(115deg, #60B3FF, #3694FD 40%, #5B6FF5), with #0048FF, #1863DC and #34394D used as section backgrounds. NOT YET APPROVED BY BRAND. Correct the values here and nothing else changes.",
+      "paletteProvenance": "Sampled from the rendered https://www.nice.com/websites/nice-world-london page rather than guessed. That page serves nice.com's own CSS custom properties, so the event look lives in its hero rather than in tokens: linear-gradient(115deg, #60B3FF, #3694FD 40%, #5B6FF5), with #0048FF, #1863DC and #34394D used as section backgrounds.",
+      "paletteApproval": "Approved by Olivier Attia for internal and demo use, 2026-09-08. That is a working approval, not a brand-team sign-off: it covers showing the room to colleagues, prospects and at events, and it does NOT extend to anything that needs formal brand review. If NiCE brand later issues official event values, correct the palette here and nothing else changes. No logo file is bundled either way, for the reason in brandAssets above.",
       "paletteChoices": "#5B6FF5 is the indigo END of that gradient and was tried as the flat accent first. It made every control read violet rather than NiCE blue, so the gradient keeps it and flat elements use #1863DC, the deeper blue the page itself uses as a section background. primaryContrast is white because #1863DC is dark enough that black-on-primary drops to roughly 3.9:1: the default room can carry black on its lighter #3694FD, this one cannot.",
       "palette": {
         "primary": "#1863DC",
