@@ -180,6 +180,91 @@ if (/\s/.test(clean(merged.firstName))) {
   if (clean(merged.lastName) === '' && rest !== '') { merged.lastName = rest; }
 }
 
+// THE CLAIMED IDENTITY, from the launch URL via the portal.
+//
+// The room can be opened with ?c=<Salesforce Contact id>, and CognigyTransport sends the
+// resolved contact as data._launch on every turn until the introduction finishes. It is sent
+// repeatedly on purpose: the model does not reliably call this tool on the opening turn, and
+// Cognigy only carries client data for the turn it arrived on.
+//
+// Several locations are tried because which one the channel populates is not something to
+// guess at. launchSource in the result reports which one answered.
+function readLaunch() {
+  const candidates = [
+    input.data,
+    input.request && input.request.data,
+    input.payload && input.payload.data
+  ];
+  const names = ['input.data', 'input.request.data', 'input.payload.data'];
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i];
+    if (c && typeof c === 'object' && c._launch && typeof c._launch === 'object') {
+      return { source: names[i], value: c._launch };
+    }
+  }
+  return null;
+}
+
+const launchRead = readLaunch();
+
+// Copied into the merged bag so it survives to later turns, under a launch prefix so it can
+// never be mistaken for something the visitor actually told us. NOT emitted: the payload is
+// built from an ALL_FIELDS allowlist, so nothing here can leak into it.
+if (launchRead) {
+  const L = launchRead.value;
+  const map = {
+    launchContactId: L.contactId,
+    launchFirstName: L.firstName,
+    launchLastName: L.lastName,
+    launchJobTitle: L.jobTitle,
+    launchEmail: L.email,
+    launchCompany: L.company
+  };
+  Object.keys(map).forEach(function (key) {
+    if (clean(map[key]) !== '' && clean(merged[key]) === '') { merged[key] = clean(map[key]); }
+  });
+}
+
+const hasLaunch = clean(merged.launchFirstName) !== '';
+
+// Accepting or rejecting the claimed identity.
+//
+// Anything that is not clearly a rejection counts as acceptance, because the buttons say
+// "Yes, that's me" and "Not me" and the two mistakes do not cost the same. A wrongly discarded
+// identity costs three questions. A wrongly accepted one files the session against a stranger
+// and addresses them by someone else's name all the way to the closing page.
+// An answer only counts if the question was actually PUT to the visitor on an earlier turn.
+//
+// This gate is not paranoia about the model, it is a bug it already committed. On the very
+// first tool call, with the launch identity present and the confirmation not yet asked, it
+// passed identityConfirmed itself and the node accepted an identity nobody in the room had
+// agreed to. A forwarded invitation would have been silently accepted, which is the single
+// thing this whole confirmation exists to prevent.
+//
+// identityAsked is persisted only on a turn where the question was genuinely returned, so the
+// model cannot manufacture consent by answering on the visitor's behalf. Same shape as
+// industryAsked.
+const identityWasAsked = existing.identityAsked === 'true';
+const identityAnswer = clean(args.identityConfirmed);
+if (identityAnswer !== '' && hasLaunch && identityWasAsked && merged.identityAccepted !== 'true' && merged.identityRejected !== 'true') {
+  if (/\b(not me|no|nope|wrong|isn'?t me|is not me|someone else|different)\b/i.test(identityAnswer)) {
+    // People forward invitations. A rejection discards everything and the ordinary questions
+    // come back, because the fields below stay empty.
+    merged.identityRejected = 'true';
+  } else {
+    merged.identityAccepted = 'true';
+    if (clean(merged.firstName) === '') { merged.firstName = merged.launchFirstName; }
+    if (clean(merged.lastName) === '' && clean(merged.launchLastName) !== '') { merged.lastName = merged.launchLastName; }
+    if (clean(merged.jobTitle) === '' && clean(merged.launchJobTitle) !== '') { merged.jobTitle = merged.launchJobTitle; }
+    if (clean(merged.email) === '' && clean(merged.launchEmail) !== '') { merged.email = merged.launchEmail; }
+    // The account NAME, not a domain. Display only, exactly like a typed company answer.
+    if (clean(merged.company) === '' && clean(merged.launchCompany) !== '') { merged.company = merged.launchCompany; }
+  }
+}
+
+// True while the room has a claimed identity that the person in it has not yet settled.
+const identityPending = hasLaunch && merged.identityAccepted !== 'true' && merged.identityRejected !== 'true';
+
 const domain = emailDomain(merged.email);
 const emailIsPersonal = domain !== '' && GENERIC_EMAIL_DOMAINS.indexOf(domain) !== -1;
 
@@ -272,11 +357,23 @@ const industryKnown = clean(merged.industry) !== '';
 const industryDeclined = merged.industryAsked === true && !industryKnown;
 
 // Four questions covering six fields, plus a fifth only when the email identifies no employer.
-const QUESTION_PLAN = [
+const QUESTION_PLAN = [];
+
+// FIRST when the launch URL claimed an identity, so it replaces the name, employer and email
+// questions rather than being asked alongside them. Confirming is one tap instead of three
+// answers. On rejection those three come back on their own, because their fields stay empty.
+if (identityPending) {
+  QUESTION_PLAN.push({
+    needs: ['identityConfirmed'],
+    ask: 'Do NOT ask their name, employer or email: the invitation already told you. Instead greet them by first name and say you have them down as being at that company, then ask if that is right. Show the FIRST NAME and the COMPANY and nothing else: never read their own email address or job title back at them. Two buttons appear automatically, so do not list the options.'
+  });
+}
+
+QUESTION_PLAN.push(
   { needs: ['firstName'], ask: 'Ask for their name. Whatever they give is enough: do NOT follow up asking for a surname.' },
   { needs: ['company', 'jobTitle'], ask: 'Ask where they work and what their role is there. One question, both answers.' },
   { needs: ['email'], ask: 'Ask for their business email, and say plainly it is so you can follow up or send them anything they want to keep.' }
-];
+);
 
 if (emailIsPersonal) {
   QUESTION_PLAN.push({
@@ -495,6 +592,33 @@ const askingIndustryNow =
 //
 // Same one-set-of-buttons-per-turn rule as the vertical question. This is the last question
 // before the introduction completes, so nothing else emits a cta in the same turn.
+// The identity confirmation's two buttons.
+const askingIdentityNow = nextStep !== null && nextStep.fields.indexOf('identityConfirmed') !== -1;
+
+// Recorded ONLY on a turn where the question was genuinely returned, which is what makes the
+// identityWasAsked gate above meaningful. A second setContext rather than reordering the whole
+// node: the first one runs before nextStep is known.
+if (askingIdentityNow) {
+  try {
+    actions.setContext('digitalRoomVisitor', Object.assign({}, merged, { identityAsked: 'true' }));
+  } catch (e) { /* the confirmation will simply be asked again next turn */ }
+}
+
+if (askingIdentityNow) {
+  try {
+    actions.output(null, {
+      _showroom: {
+        v: 1,
+        action: 'offer',
+        cta: [
+          { label: "Yes, that's me", value: "Yes, that's me", kind: 'quick_reply' },
+          { label: 'Not me', value: 'Not me', kind: 'quick_reply' }
+        ]
+      }
+    });
+  } catch (e) { /* they can still type it; not worth failing the turn */ }
+}
+
 const askingInterestNow = nextStep !== null && nextStep.fields.indexOf('interest') !== -1;
 if (askingInterestNow) {
   try {
@@ -584,7 +708,7 @@ if (crmLookupPending) {
 //
 // Deferring the content is the right way round: the question is one tap and the demo is still
 // there afterwards, whereas a demo shown now with the wrong buttons under it wastes both.
-if (askingIndustryNow || askingInterestNow) {
+if (askingIndustryNow || askingInterestNow || askingIdentityNow) {
   lookupNudge += ' This question is the WHOLE turn. Do NOT call OAT_DIGITAL_ROOM_find_demo or OAT_DIGITAL_ROOM_show_demo in this turn, even if the visitor just asked to see something: its suggestions would replace this question\'s buttons and leave the visitor answering the wrong question. If they asked for content, say in one clause that you will bring it up next, then ask this.';
 }
 
@@ -597,6 +721,14 @@ input.result = {
   industrySource: clean(merged.industrySource) || null,
   askingIndustry: askingIndustryNow,
   askingInterest: askingInterestNow,
+  askingIdentity: askingIdentityNow,
+  // Diagnostics for the launch URL. launchSource reports WHICH input location carried the
+  // claimed identity, because which one the channel populates is not worth guessing at: if
+  // this is null while the portal is sending one, the payload is arriving somewhere else.
+  launchSource: launchRead ? launchRead.source : null,
+  identityState: hasLaunch
+    ? (merged.identityAccepted === 'true' ? 'accepted' : merged.identityRejected === 'true' ? 'rejected' : 'pending')
+    : 'none',
   crmLookupWebsite: lookupWebsite || null,
   companyDomain: merged.website ? clean(merged.website) : (emailIsPersonal ? null : (domain || null)),
   emailIsPersonalProvider: emailIsPersonal,

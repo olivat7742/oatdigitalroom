@@ -38,8 +38,8 @@ const check = (label, ok, detail) => {
   if (!ok) { failed += 1; if (detail !== undefined) console.log('        ', JSON.stringify(detail)) }
 }
 
-const runProfile = (toolArgs, ctx = {}) => {
-  const input = { aiAgent: { toolArgs } }
+const runProfile = (toolArgs, ctx = {}, data = undefined) => {
+  const input = { aiAgent: { toolArgs }, ...(data ? { data } : {}) }
   const context = { ...ctx }
   const outputs = []
   const actions = {
@@ -210,6 +210,83 @@ console.log('\nstore_visitor_profile: the name')
     !firstOnly.result.missingCore.includes('lastName'),
     firstOnly.result.missingCore,
   )
+}
+
+// The room can be launched with ?c=<contact id>, and CognigyTransport sends the resolved
+// contact as data._launch. Nothing from a URL is established until the person in the room
+// accepts it, because people forward invitations.
+console.log('\nstore_visitor_profile: a claimed identity from the launch URL')
+{
+  const LAUNCH = {
+    _launch: {
+      v: 1,
+      contactId: '0033n00002Yams0AAB',
+      firstName: 'Dana',
+      lastName: 'Whitfield',
+      jobTitle: 'Head of Service',
+      email: 'dana@northwindlogistics.com',
+      company: 'Northwind Logistics',
+    },
+  }
+
+  const pending = runProfile({}, {}, LAUNCH)
+  check('the claimed identity is seen', pending.result.launchSource === 'input.data', pending.result.launchSource)
+  check('and is PENDING, not established', pending.result.identityState === 'pending', pending.result.identityState)
+  check('the first question is the confirmation', pending.result.askingIdentity === true, pending.result.nextQuestion)
+  check(
+    'and the name is NOT asked',
+    !/ask for their name/i.test(pending.result.nextQuestion ?? ''),
+    pending.result.nextQuestion,
+  )
+  check(
+    'the model is told not to read back the email or role',
+    /never read their own email/i.test(pending.result.nextQuestion ?? ''),
+    pending.result.nextQuestion,
+  )
+  const buttons = pending.outputs.find((o) => o.data && o.data._showroom)?.data._showroom
+  check('two buttons are offered', buttons?.cta?.length === 2, buttons?.cta)
+  check('as an offer', buttons?.action === 'offer')
+  // Nothing is filed against a person who has not spoken yet.
+  check('nothing is recorded yet', pending.result.known.firstName === undefined, pending.result.known)
+  const payload = pending.outputs.find((o) => o.data && o.data._visitor)?.data._visitor
+  check('and the payload names nobody', payload?.firstName === undefined, payload)
+  check('no launch working field leaks into the payload', !Object.keys(payload ?? {}).some((k) => k.startsWith('launch')), Object.keys(payload ?? {}))
+
+  // THE BUG THIS GATE EXISTS FOR. On the first tool call, with the confirmation not yet put to
+  // anyone, the model passed identityConfirmed itself and the node accepted an identity nobody
+  // in the room had agreed to. A forwarded invitation would have been silently accepted.
+  const selfConfirmed = runProfile({ identityConfirmed: "Yes, that's me" }, {}, LAUNCH)
+  check(
+    'the model cannot confirm an identity that was never asked',
+    selfConfirmed.result.identityState === 'pending',
+    selfConfirmed.result.identityState,
+  )
+  check('so nothing is recorded', selfConfirmed.result.known.firstName === undefined, selfConfirmed.result.known)
+  check('and the confirmation is still put', selfConfirmed.result.askingIdentity === true)
+
+  // Once it HAS been asked, the visitor's answer counts. context carries the flag the node
+  // persisted on the turn it asked.
+  const ASKED = { digitalRoomVisitor: { identityAsked: 'true' } }
+  const accepted = runProfile({ identityConfirmed: "Yes, that's me" }, ASKED, LAUNCH)
+  check('accepting records the identity', accepted.result.known.firstName === 'Dana', accepted.result.known)
+  check('with the company', accepted.result.known.company === 'Northwind Logistics', accepted.result.known.company)
+  check('and the email', accepted.result.known.email === 'dana@northwindlogistics.com', accepted.result.known.email)
+  check('state is accepted', accepted.result.identityState === 'accepted', accepted.result.identityState)
+  check('the confirmation is not asked again', accepted.result.askingIdentity === false)
+  check('and the department is next', /department or team/i.test(accepted.result.nextQuestion ?? ''), accepted.result.nextQuestion)
+
+  const rejected = runProfile({ identityConfirmed: 'Not me' }, ASKED, LAUNCH)
+  check('rejecting records nothing', rejected.result.known.firstName === undefined, rejected.result.known)
+  check('state is rejected', rejected.result.identityState === 'rejected', rejected.result.identityState)
+  check(
+    'and the ordinary name question comes back',
+    /ask for their name/i.test(rejected.result.nextQuestion ?? ''),
+    rejected.result.nextQuestion,
+  )
+
+  const noLaunch = runProfile({})
+  check('with no launch data there is no claimed identity', noLaunch.result.identityState === 'none')
+  check('and no confirmation question', noLaunch.result.askingIdentity === false, noLaunch.result.nextQuestion)
 }
 
 console.log('\nstore_visitor_profile: recording the answer')

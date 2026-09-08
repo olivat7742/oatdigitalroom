@@ -1,5 +1,7 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
 import { toStageAsset } from '@/catalog'
+import { lookupContact } from '@/crm'
+import { roomParams } from '@/roomParams'
 import { STAGE_DIRECTIVE_VERSION } from '@/types/stageDirective'
 
 /** Proxied by the dev server to the real endpoint, so the URL token stays server-side. */
@@ -92,6 +94,23 @@ export class CognigyTransport implements Transport {
   private connectionHandler: ((s: ConnectionState) => void) | null = null
   private disposed = false
 
+  /**
+   * The visitor the launch URL claimed this is, sent to the agent so it need not ask what we
+   * already know. Resolved here rather than in the store, because it comes from the URL and
+   * the store has no business knowing about URLs.
+   */
+  private readonly launch = lookupContact(roomParams.contactId)
+
+  /**
+   * Stops sending the launch identity once the agent reports the introduction finished.
+   *
+   * It is sent on EVERY turn until then, not just the first. The model does not reliably call
+   * save_visitor_profile on the opening turn, and Cognigy only carries client `data` for the
+   * turn it was sent on, so a first-turn-only payload would be silently lost exactly when the
+   * model skipped the tool call.
+   */
+  private introductionDone = false
+
   constructor(sessionId?: string) {
     // Stable per page load so multi-turn context is preserved server-side.
     this.sessionId = sessionId ?? `dr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -127,6 +146,30 @@ export class CognigyTransport implements Transport {
     void this.post(text)
   }
 
+  /**
+   * What the client tells the agent, which is only ever the claimed identity.
+   *
+   * The agent decides what to do with it: it offers it back for confirmation and records
+   * nothing until the visitor accepts, exactly as mock mode does. The portal deliberately does
+   * NOT pre-confirm on the agent's behalf, because people forward invitations and the person
+   * in the room is the only one who can settle who they are.
+   */
+  private launchPayload(): Record<string, unknown> {
+    if (!this.launch || this.introductionDone) return {}
+    const { contactId, firstName, lastName, jobTitle, email, accountName } = this.launch
+    return {
+      _launch: {
+        v: 1,
+        contactId,
+        firstName,
+        ...(lastName ? { lastName } : {}),
+        ...(jobTitle ? { jobTitle } : {}),
+        ...(email ? { email } : {}),
+        ...(accountName ? { company: accountName } : {}),
+      },
+    }
+  }
+
   private async post(text: string, opts: { markOpen?: boolean } = {}): Promise<void> {
     this.typingHandler?.(true)
 
@@ -134,7 +177,12 @@ export class CognigyTransport implements Transport {
       const response = await fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: this.userId, sessionId: this.sessionId, text, data: {} }),
+        body: JSON.stringify({
+          userId: this.userId,
+          sessionId: this.sessionId,
+          text,
+          data: this.launchPayload(),
+        }),
       })
 
       if (!response.ok) throw new Error(`endpoint returned ${response.status}`)
@@ -147,6 +195,13 @@ export class CognigyTransport implements Transport {
 
       const payloads = collectPayloads(payload)
       const spoken = typeof payload.text === 'string' ? payload.text.trim() : ''
+
+      // Once the agent says the introduction is done there is nothing left for the launch
+      // identity to save, so stop sending it rather than repeating it for the whole session.
+      const visitor = payloads?.['_visitor']
+      if (isRecord(visitor) && visitor['introductionComplete'] === true) {
+        this.introductionDone = true
+      }
 
       // One inbound message carrying every part of the turn: text for the rail, _showroom for
       // the stage, _visitor for the header chrome.
