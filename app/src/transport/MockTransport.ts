@@ -3,7 +3,6 @@ import {
   FALLBACK,
   GREETING,
   IDENTITY_CONFIRMATION,
-  identityQuestion,
   INDUSTRY_BRANCH,
   NICE_EMPLOYEE_BRANCH,
   NICE_ON_BEHALF_BRANCH,
@@ -20,6 +19,7 @@ import {
   type CrmContact,
   type CrmLookupResult,
 } from '@/crm'
+import { identityQuestion, isIdentityRejection } from '@/identity'
 import { industryByLabel } from '@/industries'
 import { exampleInterests } from '@/interestExamples'
 import { roomParams, type RoomParams } from '@/roomParams'
@@ -512,11 +512,7 @@ export class MockTransport implements Transport {
    * forwarded link lands in the ordinary introduction with nothing filled in.
    */
   private resolveClaimedIdentity(answer: string): void {
-    const rejected = /\b(not me|no|nope|wrong|isn'?t me|is not me|someone else|different)\b/i.test(
-      answer,
-    )
-
-    if (rejected || !this.claimed) {
+    if (isIdentityRejection(answer) || !this.claimed) {
       const restored = ONBOARDING.filter((step) =>
         step.fields.some((f) => IDENTIFIED_BY_URL.includes(f)),
       )

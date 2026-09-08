@@ -244,9 +244,23 @@ const hasLaunch = clean(merged.launchFirstName) !== '';
 // identityAsked is persisted only on a turn where the question was genuinely returned, so the
 // model cannot manufacture consent by answering on the visitor's behalf. Same shape as
 // industryAsked.
+// PRE-CONFIRMED BY THE PORTAL, which is the path this product actually uses.
+//
+// CognigyTransport puts the identity question itself, before sending the agent anything, and
+// only sets confirmed once the visitor has accepted. A refusal sends no _launch at all, so
+// there is nothing here to accept. Trusted because a deterministic step produced it, unlike
+// the model answering on the visitor's behalf, which is what the gate below is for.
+const launchPreConfirmed = Boolean(launchRead && launchRead.value && launchRead.value.confirmed === true);
+
+// An answer from the MODEL only counts if the question was actually PUT on an earlier turn.
+// That gate is not paranoia, it is a bug it already committed: on the very first tool call,
+// with the confirmation not yet asked, it passed identityConfirmed itself and the node
+// accepted an identity nobody in the room had agreed to. A forwarded invitation would have
+// been silently accepted, which is the single thing this confirmation exists to prevent.
+// identityAsked is persisted only on a turn where the question was genuinely returned.
 const identityWasAsked = existing.identityAsked === 'true';
-const identityAnswer = clean(args.identityConfirmed);
-if (identityAnswer !== '' && hasLaunch && identityWasAsked && merged.identityAccepted !== 'true' && merged.identityRejected !== 'true') {
+const identityAnswer = launchPreConfirmed ? "Yes, that's me" : clean(args.identityConfirmed);
+if (identityAnswer !== '' && hasLaunch && (launchPreConfirmed || identityWasAsked) && merged.identityAccepted !== 'true' && merged.identityRejected !== 'true') {
   if (/\b(not me|no|nope|wrong|isn'?t me|is not me|someone else|different)\b/i.test(identityAnswer)) {
     // People forward invitations. A rejection discards everything and the ordinary questions
     // come back, because the fields below stay empty.

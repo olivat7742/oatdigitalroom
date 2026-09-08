@@ -1,7 +1,9 @@
 import type { ConnectionState, InboundMessage, Transport } from './types'
 import { toStageAsset } from '@/catalog'
 import { lookupContact } from '@/crm'
+import { IDENTITY_CTA, identityQuestion, isIdentityRejection } from '@/identity'
 import { roomParams } from '@/roomParams'
+import { activeTemplate } from '@/templates'
 import { STAGE_DIRECTIVE_VERSION } from '@/types/stageDirective'
 
 /** Proxied by the dev server to the real endpoint, so the URL token stays server-side. */
@@ -111,6 +113,18 @@ export class CognigyTransport implements Transport {
    */
   private introductionDone = false
 
+  /**
+   * Set while the portal has put the identity question and is waiting for the answer.
+   *
+   * Nothing is sent to the agent during this: the confirmation happens entirely client-side,
+   * before the conversation starts. See app/src/identity.ts for why the portal owns it.
+   */
+  private awaitingIdentity = false
+
+  /** Whether the visitor accepted the claimed identity, and whether they refused it. */
+  private identityConfirmed = false
+  private identityRejected = false
+
   constructor(sessionId?: string) {
     // Stable per page load so multi-turn context is preserved server-side.
     this.sessionId = sessionId ?? `dr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -131,6 +145,32 @@ export class CognigyTransport implements Transport {
   async connect(): Promise<void> {
     this.disposed = false
     this.connectionHandler?.('connecting')
+
+    // The one case where the opening turn does NOT come from the agent.
+    //
+    // With a claimed identity the portal asks the confirmation itself and sends the agent
+    // nothing until it is answered, because consent must not depend on the model deciding to
+    // call a tool. Mock mode has always worked this way; this makes live match it.
+    if (this.launch) {
+      this.awaitingIdentity = true
+
+      // Yields before emitting, and then checks disposed. Not cosmetic: React StrictMode mounts
+      // the effect twice in development, so a message emitted synchronously here arrives from
+      // the first transport before it is torn down AND from its replacement, and the visitor saw
+      // the confirmation twice. The posting path never showed this because an in-flight request
+      // resolves after disposal and returns early. Same reason MockTransport waits.
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      if (this.disposed) return
+
+      this.connectionHandler?.('open')
+      const opener = activeTemplate.welcome ? `${activeTemplate.welcome}\n\n` : ''
+      this.messageHandler?.({
+        text: `${opener}${identityQuestion(this.launch.firstName, this.launch.accountName)}`,
+        data: { _showroom: { v: STAGE_DIRECTIVE_VERSION, action: 'clear', cta: IDENTITY_CTA } },
+      })
+      return
+    }
+
     // The opening turn comes from the agent, so a failure here surfaces immediately rather
     // than on the visitor's first question.
     await this.post(PRIMING_MESSAGE, { markOpen: true })
@@ -143,6 +183,16 @@ export class CognigyTransport implements Transport {
   }
 
   send(text: string): void {
+    // The answer to the portal's own question, settled here and not forwarded as a query.
+    //
+    // The text is still posted, so the agent's first turn sees "Yes, that's me" or "Not me" as
+    // the opening user message and the transcript reads naturally. What changes is the launch
+    // payload that goes with it: confirmed, or absent entirely.
+    if (this.awaitingIdentity) {
+      this.awaitingIdentity = false
+      if (isIdentityRejection(text)) this.identityRejected = true
+      else this.identityConfirmed = true
+    }
     void this.post(text)
   }
 
@@ -156,10 +206,21 @@ export class CognigyTransport implements Transport {
    */
   private launchPayload(): Record<string, unknown> {
     if (!this.launch || this.introductionDone) return {}
+    // A refusal sends NOTHING. The agent must not be told about a person the visitor has just
+    // said they are not, or a forwarded invitation would still colour the whole session.
+    if (this.identityRejected) return {}
+    // Nor is anything sent before the answer: the agent has no business acting on a claimed
+    // identity while the question is still on screen.
+    if (this.awaitingIdentity) return {}
+
     const { contactId, firstName, lastName, jobTitle, email, accountName } = this.launch
     return {
       _launch: {
         v: 1,
+        // The portal asked and the visitor accepted, so the agent can treat this as settled.
+        // The node trusts this flag precisely because a deterministic step produced it, and
+        // keeps its own gated fallback for channels that do not pre-confirm.
+        confirmed: this.identityConfirmed,
         contactId,
         firstName,
         ...(lastName ? { lastName } : {}),

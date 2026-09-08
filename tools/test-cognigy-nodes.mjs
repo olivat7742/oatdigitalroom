@@ -284,6 +284,20 @@ console.log('\nstore_visitor_profile: a claimed identity from the launch URL')
     rejected.result.nextQuestion,
   )
 
+  // THE PATH THIS PRODUCT ACTUALLY USES. CognigyTransport puts the question itself and sets
+  // confirmed once the visitor accepts, so the agent is handed a settled identity and never
+  // has to be trusted with the consent decision.
+  const PRE = { _launch: { ...LAUNCH._launch, confirmed: true } }
+  const preConfirmed = runProfile({}, {}, PRE)
+  check('a portal-confirmed identity is accepted without the model asking', preConfirmed.result.identityState === 'accepted', preConfirmed.result.identityState)
+  check('and recorded', preConfirmed.result.known.firstName === 'Dana', preConfirmed.result.known)
+  check('with the company and email', preConfirmed.result.known.company === 'Northwind Logistics' && preConfirmed.result.known.email === 'dana@northwindlogistics.com', preConfirmed.result.known)
+  check('the confirmation is not asked again', preConfirmed.result.askingIdentity === false)
+  check('and the department is next', /department or team/i.test(preConfirmed.result.nextQuestion ?? ''), preConfirmed.result.nextQuestion)
+  // confirmed:false is the state while the question is still on screen, and must not be trusted.
+  const notYet = runProfile({}, {}, { _launch: { ...LAUNCH._launch, confirmed: false } })
+  check('confirmed:false is NOT acceptance', notYet.result.identityState === 'pending', notYet.result.identityState)
+
   const noLaunch = runProfile({})
   check('with no launch data there is no claimed identity', noLaunch.result.identityState === 'none')
   check('and no confirmation question', noLaunch.result.askingIdentity === false, noLaunch.result.nextQuestion)

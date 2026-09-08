@@ -20,6 +20,7 @@ import type { InboundMessage } from '@/transport/types'
 import { toStageAsset } from '@/catalog'
 import type { Cta, StageAsset } from '@/types/stageDirective'
 import { INDUSTRIES } from '@/industries'
+import { IDENTITY_CTA } from '@/identity'
 import { placeholderImage } from '@/placeholder'
 
 /** Fails loudly at module load if a fixture drifts away from the catalog. */
@@ -184,17 +185,9 @@ export const INDUSTRY_BRANCH: OnboardingStep[] = [
  */
 export const IDENTITY_CONFIRMATION: OnboardingStep = {
   fields: ['identityConfirmed'],
+  // Filled in at ask time by identityQuestion, since it names the visitor.
   question: '',
-  cta: [
-    { label: "Yes, that's me", value: "Yes, that's me", kind: 'quick_reply' },
-    { label: 'Not me', value: 'Not me', kind: 'quick_reply' },
-  ],
-}
-
-/** Fills in the confirmation question once the room knows who it thinks it is talking to. */
-export function identityQuestion(firstName: string, company?: string): string {
-  const at = company ? ` at ${company}` : ''
-  return `Welcome back, ${firstName}. I have you down as being${at}, so I can skip most of the questions. Is that right?`
+  cta: IDENTITY_CTA,
 }
 
 export const GREETING: ScriptedStep[] = [
