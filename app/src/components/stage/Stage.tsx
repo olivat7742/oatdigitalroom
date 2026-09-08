@@ -22,7 +22,7 @@ function TourProgress({ tour }: { tour: TourInfo }) {
         <Chip
           size="small"
           label={`Step ${tour.step} of ${tour.totalSteps}`}
-          sx={{ bgcolor: brand.primary, color: brand.black, fontWeight: 500 }}
+          sx={{ bgcolor: brand.primary, color: brand.primaryContrast, fontWeight: 500 }}
         />
         <Typography variant="body2" sx={{ color: brand.darkGray }} noWrap>
           {tour.title ?? tour.id}

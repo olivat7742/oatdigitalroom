@@ -168,14 +168,22 @@ export function MessageBubble({ message }: { message: Message }) {
           minWidth: 0,
           px: 2,
           py: 1.25,
-          // Mirrors the two nice.com button treatments: primary blue with near-black text,
-          // and a soft neutral surface.
+          // Mirrors the two nice.com button treatments: the primary with text in whatever
+          // contrasts against it, and a soft neutral surface with near-black text.
+          //
+          // primaryContrast rather than a hardcoded black. Near-black is right on NiCE's light
+          // azure and wrong on a darker event primary, where it produced a visitor bubble whose
+          // own words were barely legible. The agent bubble keeps black, because brand.base is
+          // a light neutral in every template.
           borderRadius: isVisitor ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           bgcolor: isVisitor ? brand.primary : brand.base,
-          color: brand.black,
+          color: isVisitor ? brand.primaryContrast : brand.black,
         }}
       >
-        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: brand.black }}>
+        <Typography
+          variant="body2"
+          sx={{ whiteSpace: 'pre-wrap', color: isVisitor ? brand.primaryContrast : brand.black }}
+        >
           {message.text}
         </Typography>
         {message.source && <SourceCitation source={message.source} />}

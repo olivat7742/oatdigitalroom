@@ -135,6 +135,62 @@ export function lookupCrm(input: { email?: string; website?: string }): CrmLooku
 }
 
 /**
+ * A visitor the room was told about up front, via ?c= in the launch URL.
+ *
+ * Everything except accountDomain is display: the domain is what the CRM lookup keys on, for
+ * the same reason as everywhere else in this file.
+ */
+export interface CrmContact {
+  contactId: string
+  firstName: string
+  lastName?: string
+  jobTitle?: string
+  email?: string
+  accountName?: string
+  accountDomain?: string
+}
+
+const CONTACTS = fixtures.contacts as Record<
+  string,
+  { firstName: string; lastName?: string; jobTitle?: string; email?: string; accountDomain?: string }
+>
+
+/**
+ * Resolves a Salesforce Contact id to a person, or null.
+ *
+ * ---------------------------------------------------------------------------------------
+ * SAFE ONLY BECAUSE THE DATA IS INVENTED.
+ *
+ * A raw Salesforce id in a URL turns that URL into a lookup key for a named individual's
+ * employer, role and email. It lands in browser history, referrer headers, forwarded
+ * invitations, screenshots and proxy logs, and it never expires. Salesforce ids are also not
+ * high-entropy and the unique portion is often close to sequential within an org, so treating
+ * them as unguessable is not safe.
+ *
+ * There is no real person behind any id in catalog/crm-fixtures.json, which is the only reason
+ * this function can exist as written. Before it is pointed at real Salesforce it takes a
+ * signed, expiring token verified server-side instead, and the id never reaches the URL. See
+ * the gate in docs/solution-design.md.
+ * ---------------------------------------------------------------------------------------
+ */
+export function lookupContact(contactId: string | undefined | null): CrmContact | null {
+  if (!contactId) return null
+
+  const hit = CONTACTS[contactId]
+  if (!hit) return null
+
+  // The account name comes from the accounts table rather than being stored twice, so a
+  // company cannot be called one thing in the contact record and another in the account.
+  const account = hit.accountDomain ? FIXTURES[hit.accountDomain] : undefined
+
+  return {
+    contactId,
+    ...hit,
+    ...(account?.accountName ? { accountName: account.accountName } : {}),
+  }
+}
+
+/**
  * The one line the closing summary shows about the relationship.
  *
  * Kept here rather than in the panel so the wording is decided once and the renderer stays a

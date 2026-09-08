@@ -1,0 +1,31 @@
+{
+  "notes": "Look and feel presets for the Digital Room, selected by the ?t= URL parameter. Read by app/src/templates.ts. A template overrides brand tokens, the wordmark and the opening line, so one room can be dressed for an event without a separate build.",
+  "security": "The ?t= value is attacker-controlled input that drives the UI, so it is an ALLOWLIST and nothing else. A slug that is not a key of `templates` falls back to `default` silently. No template value is ever used as a path, a URL, a style string or anything rendered raw: the only fields read are the ones app/src/templates.ts copies through by name.",
+  "brandAssets": "No logo file is included here, on purpose. Logo usage is governed by brand guidelines covering approved files, clear space and minimum sizes, and a customer-facing tool should use the file the brand team issues rather than one lifted off a marketing site. Drop an approved SVG or PNG at app/src/assets/<slug>-logo.svg and set `logoFile` to its name; until then the template renders its `wordmark` as text, exactly as the default room does.",
+  "version": "1.0.0",
+
+  "templates": {
+    "default": {
+      "label": "NiCE Digital Room",
+      "wordmark": "Digital Room",
+      "welcome": null,
+      "palette": {}
+    },
+
+    "niceworld": {
+      "label": "NiCE World",
+      "wordmark": "NiCE World",
+      "welcome": "Welcome to the NiCE Digital Room at NiCE World.",
+      "paletteProvenance": "Sampled from the rendered https://www.nice.com/websites/nice-world-london page rather than guessed. That page serves nice.com's own CSS custom properties, so the event look lives in its hero rather than in tokens: linear-gradient(115deg, #60B3FF, #3694FD 40%, #5B6FF5), with #0048FF, #1863DC and #34394D used as section backgrounds. NOT YET APPROVED BY BRAND. Correct the values here and nothing else changes.",
+      "paletteChoices": "#5B6FF5 is the indigo END of that gradient and was tried as the flat accent first. It made every control read violet rather than NiCE blue, so the gradient keeps it and flat elements use #1863DC, the deeper blue the page itself uses as a section background. primaryContrast is white because #1863DC is dark enough that black-on-primary drops to roughly 3.9:1: the default room can carry black on its lighter #3694FD, this one cannot.",
+      "palette": {
+        "primary": "#1863DC",
+        "primaryDark": "#0048FF",
+        "primaryContrast": "#FFFFFF",
+        "stage": "#34394D",
+        "accentGradient": "linear-gradient(115deg, #60B3FF 0%, #3694FD 40%, #5B6FF5 100%)"
+      },
+      "note": "The London 2026 page is now a post-event wrap-up and teases 2027 dates, so the wordmark and welcome are deliberately edition-agnostic. Add the year here when the next edition is announced."
+    }
+  }
+}

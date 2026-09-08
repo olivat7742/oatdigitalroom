@@ -214,6 +214,42 @@ So before this touches real CRM:
 
 Until those exist, mock mode leaks nothing, because none of the data is real.
 
+### 2.x Launching with a known visitor, and why the URL must not carry the id
+
+The room can be launched pre-identified, so an invited visitor is not asked what we already
+know:
+
+```
+https://…/?c=0033n00002Yams0AAB&t=niceworld
+```
+
+`?c=` is a Salesforce Contact id and `?t=` selects a look and feel. **Today `?c=` resolves
+against the invented contacts in `catalog/crm-fixtures.json`, and that is the only reason it is
+safe as written.** There is no real person behind any of those ids.
+
+The gate is the same shape as the CRM one above, and slightly worse, because it is about a
+named individual rather than a company:
+
+**A raw Salesforce id in a URL turns that URL into a lookup key for a person's employer, role
+and email.** URLs are not secrets. That one travels into browser history, `Referer` headers,
+forwarded invitations, screenshots pasted into decks, and corporate proxy logs, and it never
+expires. Salesforce ids are also not high-entropy: the unique portion is often close to
+sequential within an org, so treating them as unguessable is not safe either.
+
+So before `?c=` touches real Salesforce:
+
+1. **Take a signed, expiring token, not the id.** The campaign mints `?k=<payload>.<hmac>`, where the payload carries the contact id and an expiry and the signature uses a server-side secret. The room posts the token to a server endpoint that verifies it and resolves the contact. The id never appears in the URL, and a forwarded link stops working.
+2. **Keep the Salesforce query server-side.** It cannot run in the browser without shipping credentials. There is no backend in production today, only the dev proxy that keeps the Cognigy token off the client, so this needs either a small serverless endpoint or a Salesforce connection on the Cognigy side.
+3. **Confirm before trusting, and it already does.** People forward invitations. The room offers the identity back for confirmation and records nothing until the person accepts it, so a colleague opening Dana's link lands in the ordinary introduction rather than being addressed as Dana all the way to the closing page.
+4. **Greet by first name only.** The opening line names the person and their company and deliberately not their email or role. Reading someone's own address back at them proves nothing they did not already know and makes the room feel like it has been reading their file.
+5. **Treat the token like a credential in logs.** It is one. Do not log the query string.
+
+`?t=` carries none of this risk but is still attacker-controlled input driving the UI, so it is
+an allowlist lookup against `catalog/templates.json` and nothing else. An unknown slug falls
+back to the default silently, because the visitor did not choose the link and a room that says
+"unknown template" is broken in a way a room that just looks normal is not. No template value
+becomes a path, a URL, or a style string beyond a re-validated colour or gradient.
+
 ---
 
 ## 3. Architecture

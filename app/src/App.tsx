@@ -12,6 +12,7 @@ import { Stage } from '@/components/stage/Stage'
 import { TakeawaysTray } from '@/components/stage/TakeawaysTray'
 import { ChatRail } from '@/components/chat/ChatRail'
 import { CompanyBadge } from '@/components/CompanyBadge'
+import { activeTemplate } from '@/templates'
 import { brand } from '@/theme'
 
 /** Set VITE_TRANSPORT=cognigy in app/.env.local to talk to the real agent. */
@@ -44,11 +45,13 @@ function Wordmark() {
         NiCE
       </Typography>
       <Box sx={{ width: '1px', height: 20, bgcolor: brand.hairlineStrong }} />
+      {/* The template's wordmark, as TEXT. No logo file is bundled: see catalog/templates.json
+          for why, and for where to drop an approved one. */}
       <Typography
         component="span"
         sx={{ fontWeight: 300, fontSize: 20, letterSpacing: '-0.02em', color: brand.black }}
       >
-        Digital Room
+        {activeTemplate.wordmark}
       </Typography>
     </Stack>
   )
@@ -74,6 +77,14 @@ export function App() {
         px: { xs: 1.5, md: 3 },
         py: { xs: 1.5, md: 2 },
         gap: { xs: 1.5, md: 2 },
+        // The event accent band, present only when the template supplies a gradient. A border
+        // rather than an element, so it costs no layout and cannot shift the grid below it.
+        ...(brand.accentGradient
+          ? {
+              borderTop: '4px solid transparent',
+              borderImage: `${brand.accentGradient} 1`,
+            }
+          : {}),
       }}
     >
       {/* Three fixed columns rather than space-between, so the company badge sits in the true

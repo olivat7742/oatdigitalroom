@@ -190,7 +190,7 @@ export function VideoAsset({ asset }: { asset: StageAsset }) {
             aria-label={playing ? 'Pause' : 'Play'}
             sx={{
               bgcolor: brand.primary,
-              color: brand.black,
+              color: brand.primaryContrast,
               width: 38,
               height: 38,
               '&:hover': { bgcolor: brand.primaryDark },

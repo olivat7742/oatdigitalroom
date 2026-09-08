@@ -9,6 +9,38 @@
     "incontact.com",
     "cognigy.com"
   ],
+  "contactsNote": "INVENTED PEOPLE, keyed by an invented Salesforce Contact id, so the Digital Room can be launched with ?c=<id> and skip asking who the visitor is. Every id and every person here is fictional. 0033n00002Yams0AAB is the one used in the demo scenarios, so that link works out of the box.",
+  "contactsGate": "This is what makes ?c= safe TODAY: there is no real person behind any of these ids, so the parameter discloses nothing. Read the gate in docs/solution-design.md before pointing it at real Salesforce. A raw Salesforce id in a URL turns that URL into a lookup key for a named individual's employer, role and email, and it never expires. The real version takes a signed, expiring token verified server-side, and the contact id never appears in the URL.",
+  "contacts": {
+    "0033n00002Yams0AAB": {
+      "firstName": "Dana",
+      "lastName": "Whitfield",
+      "jobTitle": "Head of Service",
+      "email": "dana@northwindlogistics.com",
+      "accountDomain": "northwindlogistics.com"
+    },
+    "0033n00002Vbnk1AAB": {
+      "firstName": "Camille",
+      "lastName": "Dubois",
+      "jobTitle": "Head of Workforce Planning",
+      "email": "camille@vantagebank.com",
+      "accountDomain": "vantagebank.com"
+    },
+    "0033n00002Hlio2AAB": {
+      "firstName": "Priya",
+      "lastName": "Raman",
+      "jobTitle": "Head of Care",
+      "email": "priya@helioretail.com",
+      "accountDomain": "helioretail.com"
+    },
+    "0033n00002Bpth3AAB": {
+      "firstName": "Alex",
+      "lastName": "Moreau",
+      "jobTitle": "Head of Member Services",
+      "email": "alex@brightpathcare.com",
+      "accountDomain": "brightpathcare.com"
+    }
+  },
   "accounts": {
     "northwindlogistics.com": {
       "matchType": "opportunity",

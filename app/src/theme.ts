@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles'
+import { activeTemplate } from '@/templates'
 
 /**
  * NiCE brand tokens, read from the live CSS custom properties on nice.com rather than
@@ -14,11 +15,13 @@ import { createTheme } from '@mui/material/styles'
  * Buttons on nice.com are full pills (38px radius) in either primary blue with near-black
  * text, or near-black with white text. Both patterns are reproduced here.
  */
-export const brand = {
+const NICE_TOKENS = {
   black: '#22212b',
   ink: '#11181c',
   primary: '#3694fd',
   primaryDark: '#2c79ee',
+  /** Black on NiCE's azure, which is light enough to carry it. See TemplatePalette. */
+  primaryContrast: '#22212b',
   darkGray: '#6d6d72',
   gray: '#f2f0eb',
   base: '#e8e6e0',
@@ -31,7 +34,46 @@ export const brand = {
   hairline: 'rgba(34, 33, 43, 0.12)',
   hairlineStrong: 'rgba(34, 33, 43, 0.22)',
   wash: 'rgba(34, 33, 43, 0.05)',
-} as const
+}
+
+export interface BrandTokens {
+  black: string
+  ink: string
+  primary: string
+  primaryDark: string
+  primaryContrast: string
+  darkGray: string
+  gray: string
+  base: string
+  pink: string
+  pinkDark: string
+  mint: string
+  white: string
+  stage: string
+  hairline: string
+  hairlineStrong: string
+  wash: string
+  /** Present only when the active template supplies one. Renders the top accent band. */
+  accentGradient?: string
+}
+
+/**
+ * The tokens every component reads, with the active template's accents folded in.
+ *
+ * Merged HERE, at module load, rather than threaded through a React context. Roughly a dozen
+ * components import `brand` directly and read `brand.primary`, so doing it at the token layer
+ * dresses the whole room for an event without touching any of them. The trade is that the
+ * template cannot change mid-session, which is fine: it comes from the URL the visitor arrived
+ * on, and re-theming a live conversation would be a redesign rather than a feature.
+ *
+ * Only the four keys in TemplatePalette can be overridden, and each is re-validated as a colour
+ * before it gets here. Neutrals and the semantic pink and mint stay NiCE's own in every
+ * template, because those carry meaning in this UI: pink is the not-approved-content warning.
+ */
+export const brand: BrandTokens = {
+  ...NICE_TOKENS,
+  ...activeTemplate.palette,
+}
 
 export const FONT_STACK =
   "'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
@@ -39,7 +81,7 @@ export const FONT_STACK =
 export const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: brand.primary, dark: brand.primaryDark, contrastText: brand.black },
+    primary: { main: brand.primary, dark: brand.primaryDark, contrastText: brand.primaryContrast },
     secondary: { main: brand.pink, dark: brand.pinkDark, contrastText: brand.black },
     success: { main: brand.mint, contrastText: brand.black },
     background: { default: brand.gray, paper: brand.white },

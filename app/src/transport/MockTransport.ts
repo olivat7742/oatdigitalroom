@@ -2,6 +2,8 @@
 import {
   FALLBACK,
   GREETING,
+  IDENTITY_CONFIRMATION,
+  identityQuestion,
   INDUSTRY_BRANCH,
   NICE_EMPLOYEE_BRANCH,
   NICE_ON_BEHALF_BRANCH,
@@ -11,9 +13,17 @@ import {
   type ScriptedStep,
 } from '@/fixtures/conversation'
 import { findAsset, formatRuntime, searchCatalog, toStageAsset } from '@/catalog'
-import { isNiceEmployee, lookupCrm, type CrmLookupResult } from '@/crm'
+import {
+  isNiceEmployee,
+  lookupContact,
+  lookupCrm,
+  type CrmContact,
+  type CrmLookupResult,
+} from '@/crm'
 import { industryByLabel } from '@/industries'
 import { exampleInterests } from '@/interestExamples'
+import { roomParams, type RoomParams } from '@/roomParams'
+import { activeTemplate } from '@/templates'
 import type { Cta, StageSummary, SummaryTopic, ViewedAsset } from '@/types/stageDirective'
 
 /**
@@ -104,6 +114,25 @@ function catalogSearchTurn(query: string): ScriptedStep[] | null {
 }
 
 /**
+ * The question plan for a visitor the launch URL already identified.
+ *
+ * Name, employer and email are all known, so those three questions collapse into one
+ * confirmation. Department and interest are still asked, because a contact record does not know
+ * which team the project is for or what they came to see, and those are the two answers that
+ * actually steer what gets shown.
+ */
+function buildPlan(claimed: CrmContact | null): OnboardingStep[] {
+  if (!claimed) return [...ONBOARDING]
+  return [
+    IDENTITY_CONFIRMATION,
+    ...ONBOARDING.filter((step) => !step.fields.some((f) => IDENTIFIED_BY_URL.includes(f))),
+  ]
+}
+
+/** The fields a contact record supplies, and so the questions the confirmation replaces. */
+const IDENTIFIED_BY_URL = ['firstName', 'lastName', 'company', 'jobTitle', 'email']
+
+/**
  * Fixture-driven transport. No network, no backend, no model.
  *
  * Replaced by CognigyTransport (@cognigy/socket-client) once the agent is live. The point
@@ -139,7 +168,25 @@ export class MockTransport implements Transport {
    * A copy rather than the imported constant: splicing the shared array would leak one
    * visitor's branch into the next session, and in mock mode that array outlives the transport.
    */
-  private readonly plan: OnboardingStep[] = [...ONBOARDING]
+  private readonly plan: OnboardingStep[]
+
+  /**
+   * The visitor the launch URL claimed this is, before they have confirmed it.
+   *
+   * Held separately from `visitor` on purpose: nothing from a URL parameter is treated as
+   * established until the person in the room says it is theirs. People forward invitations.
+   */
+  private readonly claimed: CrmContact | null
+
+  /**
+   * Takes the launch parameters rather than reading the URL itself, so the identified-visitor
+   * path is testable without a browser. Defaults to this page's parameters, so the app is
+   * unchanged.
+   */
+  constructor(params: RoomParams = roomParams) {
+    this.claimed = lookupContact(params.contactId)
+    this.plan = buildPlan(this.claimed)
+  }
 
   /**
    * Whether NiCE already knows this company. Resolved once, when the introduction closes,
@@ -192,7 +239,32 @@ export class MockTransport implements Transport {
     await this.wait(250)
     if (this.disposed) return
     this.connectionHandler?.('open')
-    this.replay(GREETING)
+    this.replay(this.greeting())
+  }
+
+  /**
+   * The opening turn, which differs when the launch URL identified the visitor.
+   *
+   * The claimed identity is NOT written into the profile here. It is offered back for
+   * confirmation and only recorded once they accept it, so a forwarded link cannot file a
+   * session against the wrong person.
+   */
+  private greeting(): ScriptedStep[] {
+    if (!this.claimed) return GREETING
+
+    const template = activeTemplate.welcome
+    const opener = template ? `${template}\n\n` : ''
+    return [
+      {
+        delayMs: 400,
+        message: {
+          text: `${opener}${identityQuestion(this.claimed.firstName, this.claimed.accountName)}`,
+          data: {
+            _showroom: { v: 1, action: 'clear', cta: IDENTITY_CONFIRMATION.cta ?? [] },
+          },
+        },
+      },
+    ]
   }
 
   disconnect(): void {
@@ -277,6 +349,7 @@ export class MockTransport implements Transport {
       // The one answer that is not stored verbatim. It has to land on the canonical vocabulary
       // or not at all, because everything downstream keys on the label.
       if (step.fields.includes('industry')) this.recordAskedIndustry(value)
+      if (step.fields.includes('identityConfirmed')) this.resolveClaimedIdentity(value)
     }
     // Branches are inserted AFTER the answer is recorded and BEFORE the index advances, so the
     // new questions land immediately after the one that triggered them rather than at the end.
@@ -366,7 +439,14 @@ export class MockTransport implements Transport {
     // A NiCE employee never reaches this line at the email step, because that branch returns
     // above. Nothing is searched for them and nothing is asked, which is correct: a colleague
     // browsing for their own knowledge has no vertical relevant to what we show.
-    if (step.fields.includes('email') || step.fields.includes('onBehalfOfWebsite')) {
+    // identityConfirmed counts, because accepting the claimed identity is what supplies the
+    // email. Without it a pre-identified visitor would always be asked their vertical, since
+    // the lookup that could have answered it never ran.
+    if (
+      step.fields.includes('email') ||
+      step.fields.includes('onBehalfOfWebsite') ||
+      step.fields.includes('identityConfirmed')
+    ) {
       this.resolveCrm()
       // Appended to the END of the introduction rather than spliced in here, even though this
       // is where the decision is made. The live agent's lookup is a separate tool call the
@@ -420,6 +500,38 @@ export class MockTransport implements Transport {
    * into the nearest-looking box. Absent is a normal outcome here: the question invites the
    * visitor to say none of them fit.
    */
+  /**
+   * Accepts or discards the identity the launch URL claimed.
+   *
+   * Anything that is not clearly a rejection counts as confirmation, because the buttons are
+   * "Yes, that's me" and "Not me" and the cost of the two mistakes is not equal: a wrongly
+   * discarded identity costs three questions, a wrongly accepted one files the session against
+   * a stranger and addresses them by someone else's name all the way to the closing page.
+   *
+   * On rejection the plan grows back the questions the confirmation had replaced, so a
+   * forwarded link lands in the ordinary introduction with nothing filled in.
+   */
+  private resolveClaimedIdentity(answer: string): void {
+    const rejected = /\b(not me|no|nope|wrong|isn'?t me|is not me|someone else|different)\b/i.test(
+      answer,
+    )
+
+    if (rejected || !this.claimed) {
+      const restored = ONBOARDING.filter((step) =>
+        step.fields.some((f) => IDENTIFIED_BY_URL.includes(f)),
+      )
+      this.plan.splice(this.onboardingStep + 1, 0, ...restored)
+      return
+    }
+
+    this.visitor['firstName'] = this.claimed.firstName
+    if (this.claimed.lastName) this.visitor['lastName'] = this.claimed.lastName
+    if (this.claimed.jobTitle) this.visitor['jobTitle'] = this.claimed.jobTitle
+    if (this.claimed.email) this.visitor['email'] = this.claimed.email
+    // The account NAME, not the domain. Display only, exactly like a typed company answer.
+    if (this.claimed.accountName) this.visitor['company'] = this.claimed.accountName
+  }
+
   private recordAskedIndustry(answer: string): void {
     const industry = industryByLabel(answer)
     if (industry) {
@@ -488,8 +600,15 @@ export class MockTransport implements Transport {
     // are not part of the contract (niceIntent, and the two onBehalfOf answers before they are
     // nested), and the schema sets additionalProperties:false, so a spread would emit a payload
     // that fails its own contract.
-    const { onBehalfOfCompany, onBehalfOfWebsite, niceIntent: _intent, ...rest } = this.visitor
+    const {
+      onBehalfOfCompany,
+      onBehalfOfWebsite,
+      niceIntent: _intent,
+      identityConfirmed: _confirmed,
+      ...rest
+    } = this.visitor
     void _intent
+    void _confirmed
 
     const onBehalfOf =
       onBehalfOfCompany || onBehalfOfWebsite

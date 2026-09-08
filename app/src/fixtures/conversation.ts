@@ -170,6 +170,33 @@ export const INDUSTRY_BRANCH: OnboardingStep[] = [
   },
 ]
 
+/**
+ * Asked instead of the name, company and email questions when ?c= identified the visitor.
+ *
+ * A confirmation and not a statement, for one reason above all: people forward invitations. If
+ * Dana sends the link to a colleague, the colleague opens the room as Dana, and the room would
+ * spend the whole session addressing them by the wrong name and filing the transcript against
+ * the wrong contact. One tap settles it.
+ *
+ * It also deliberately shows the NAME and the COMPANY and not the email or the role. Reading
+ * someone's own email address back at them proves nothing they did not already know and makes
+ * the room feel like it has been reading their file.
+ */
+export const IDENTITY_CONFIRMATION: OnboardingStep = {
+  fields: ['identityConfirmed'],
+  question: '',
+  cta: [
+    { label: "Yes, that's me", value: "Yes, that's me", kind: 'quick_reply' },
+    { label: 'Not me', value: 'Not me', kind: 'quick_reply' },
+  ],
+}
+
+/** Fills in the confirmation question once the room knows who it thinks it is talking to. */
+export function identityQuestion(firstName: string, company?: string): string {
+  const at = company ? ` at ${company}` : ''
+  return `Welcome back, ${firstName}. I have you down as being${at}, so I can skip most of the questions. Is that right?`
+}
+
 export const GREETING: ScriptedStep[] = [
   {
     delayMs: 400,

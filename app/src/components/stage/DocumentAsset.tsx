@@ -101,7 +101,7 @@ export function DocumentAsset({ asset }: { asset: StageAsset }) {
                 key={badge}
                 size="small"
                 label={badge}
-                sx={{ bgcolor: brand.primary, color: brand.black, fontWeight: 500 }}
+                sx={{ bgcolor: brand.primary, color: brand.primaryContrast, fontWeight: 500 }}
               />
             ))}
           </Stack>

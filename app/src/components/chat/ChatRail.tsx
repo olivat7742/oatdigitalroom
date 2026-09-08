@@ -214,7 +214,7 @@ export function ChatRail() {
           aria-label="Send"
           sx={{
             bgcolor: brand.primary,
-            color: brand.black,
+            color: brand.primaryContrast,
             width: 40,
             height: 40,
             '&:hover': { bgcolor: brand.primaryDark },
