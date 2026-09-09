@@ -84,6 +84,47 @@ Override the location with `SHOWROOM_MEDIA_ROOT` if it moves.
 Production will not use this middleware. Assets belong on a CDN, which is still an open item
 in `../docs/solution-design.md`.
 
+### The remote media host, and who can actually play from it
+
+26 of the 55 videos are also hosted at `https://stt.nicelab71.com/`, flat by basename. That is
+what gives the GitHub Pages build real playback, since `/media/` does not exist there.
+
+Which videos those are is not guessed and not probed at build time. `tools/probe-remote-media.mjs`
+HEADs every catalog video against the host and writes `../catalog/remote-media.json`;
+`tools/build-catalog.mjs` reads that manifest and emits `source.remoteUrl` only for the files
+that answered 200. Run them in that order after uploading more videos:
+
+```bash
+node tools/probe-remote-media.mjs
+```
+
+```bash
+node tools/build-catalog.mjs
+```
+
+The build stays offline and deterministic on purpose. If it probed the network, the catalog
+would depend on what happened to be uploaded when someone ran a build, and a build outside the
+lab network would silently drop every remote URL.
+
+`app/src/catalog.ts` prefers the local `/media/` path whenever the files are on disk, so
+development stays offline and fast, and falls back to `remoteUrl` only in a static build.
+
+**These videos do not play for everyone, and that is not a bug in this code.** The host presents
+a certificate issued by NiCE's internal PKI, chaining to `Nice Systems RootCA` rather than to a
+public CA. Verified against the Mozilla root set alone it is rejected with
+`SELF_SIGNED_CERT_IN_CHAIN`; it succeeds on a NiCE corporate device only because that root is in
+the machine's trust store. So:
+
+- NiCE staff on a managed device: the videos play.
+- A prospect, partner or anyone on a personal device: the request fails with a certificate
+  error, and `VideoAsset.tsx` falls back to the generated poster, the synthetic playback clock
+  and the badge **Simulated playback, video unavailable here**. Chapters and talk tracks keep
+  working, so the room still demonstrates.
+
+Serving the files from a publicly-trusted certificate is the one change that would make them
+play for everyone. Until then, treat remote playback as a convenience for internal machines and
+never promise it in a customer-facing session you have not tested on that device.
+
 Walkthrough and diagram assets are still generated placeholders watermarked **MOCK ASSET**,
 because no real assets of those types exist yet.
 

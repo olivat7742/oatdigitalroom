@@ -21,12 +21,19 @@ customer stories from TD Bank, Hyatt and Bosch, plus short product and executive
 are already published publicly by NiCE, so they are genuinely cleared for external use.
 
 The other 55 assets are local video files that are **not** in this repository: NiCE marketing
-masters, of which 11 are now approved for external use and 44 are not. For all of them the
-published build falls back to a synthetic playback clock over generated `MOCK ASSET`
-placeholders, because the media itself is not in the repository. Chapters, scrubbing, and the
-talk-track narration that arrives in the chat rail as playback crosses each chapter are all
-real and driven by the actual catalog metadata, so the mechanism is fully visible even where
-the content is not.
+masters, of which 11 are now approved for external use and 44 are not.
+
+26 of those 55 are also hosted at `https://stt.nicelab71.com/`, and the published build points
+at that host for them. **They play only on a NiCE corporate device**, because the host's
+certificate chains to NiCE's internal `Nice Systems RootCA` rather than to a public CA, so the
+request fails elsewhere with a certificate error. See `app/README.md` for the detail and for
+how to refresh which videos are listed.
+
+Everywhere the media is not reachable, whether because a video is not uploaded or because the
+device does not trust that root, the build falls back to a synthetic playback clock over
+generated `MOCK ASSET` placeholders. Chapters, scrubbing, and the talk-track narration that
+arrives in the chat rail as playback crosses each chapter are all real and driven by the actual
+catalog metadata, so the mechanism is fully visible even where the content is not.
 
 The live Cognigy agent runs **locally only**, behind a dev proxy. A public static site has
 nowhere safe to keep a credential, so the published build has none and cannot reach Cognigy
@@ -98,7 +105,7 @@ This is the **code** for the Digital Room, not the content.
 
 Deliberately not included:
 
-- **No demo media.** The videos live outside this tree and are NiCE marketing assets that have not been approved for external distribution. The dev server reads them from a local path, overridable with `SHOWROOM_MEDIA_ROOT`. Clone this and the stage will render but have nothing to play.
+- **No demo media.** The videos live outside this tree and are NiCE marketing assets, most of which have not been approved for external distribution. The dev server reads them from a local path, overridable with `SHOWROOM_MEDIA_ROOT`. Clone this without those files and the stage still renders: 26 videos stream from the remote host if you are on a NiCE corporate device, and everything else falls back to simulated playback.
 - **No credentials.** The Cognigy endpoint URL token is a live secret and lives only in `app/.env.local`, which is gitignored. See `app/.env.example` for the shape.
 - **No tenant identifiers.** The record of the live Cognigy deployment, including project, agent, flow and LLM ids, is kept local and out of version control.
 

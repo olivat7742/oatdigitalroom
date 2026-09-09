@@ -32,7 +32,22 @@ export function VideoAsset({ asset }: { asset: StageAsset }) {
 
   const chapters = useMemo(() => asset.chapters ?? [], [asset.chapters])
   const duration = asset.durationSeconds ?? 0
-  const realSource = hasRealSource(asset)
+
+  /**
+   * Set when the browser cannot load the media, which demotes this asset to the same synthetic
+   * playback a catalog placeholder gets.
+   *
+   * This is load-bearing rather than defensive. The remote media host presents a certificate
+   * issued by NiCE's internal PKI, so the fetch succeeds on a NiCE corporate device and fails
+   * with a certificate error anywhere else, and the catalog cannot know which kind of device it
+   * is running on. Without this the visitor got a black rectangle and a clock that never moved,
+   * which reads as a broken room; with it they get the poster, a stated reason, and a chapter
+   * walkthrough that still works. A 404 or an offline lab host land here too.
+   *
+   * Reset by key={asset.id} on the component, so one bad asset does not poison the next.
+   */
+  const [mediaFailed, setMediaFailed] = useState(false)
+  const realSource = hasRealSource(asset) && !mediaFailed
 
   const requestSeek = useCallback((position: number) => {
     nonceRef.current += 1
@@ -100,6 +115,13 @@ export function VideoAsset({ asset }: { asset: StageAsset }) {
             src={asset.src}
             poster={asset.posterUrl}
             playsInline
+            // The element's own error event, not the network's: it fires for a failed
+            // handshake, a 404, and a container the browser cannot decode alike, which is
+            // exactly the set of ways a remote source can let us down.
+            onError={() => {
+              console.warn(`[showroom] media failed to load for "${asset.id}", falling back to simulated playback`)
+              setMediaFailed(true)
+            }}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         ) : (
@@ -126,7 +148,10 @@ export function VideoAsset({ asset }: { asset: StageAsset }) {
               }}
             >
               <Typography variant="caption" sx={{ color: brand.pink, fontWeight: 500, letterSpacing: 0.6 }}>
-                Simulated playback, no media file
+                {/* Two different situations, and conflating them would send whoever is
+                    debugging in the wrong direction: no file was ever offered, versus a file
+                    was offered and this browser could not load it. */}
+                {mediaFailed ? 'Simulated playback, video unavailable here' : 'Simulated playback, no media file'}
               </Typography>
             </Box>
           </>

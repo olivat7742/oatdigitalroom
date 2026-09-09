@@ -20,16 +20,33 @@ import { placeholderImage } from '@/placeholder'
  */
 const MEDIA_AVAILABLE = import.meta.env.VITE_MEDIA_AVAILABLE !== 'false'
 
-function formatDuration(seconds: number | undefined): string {
-  if (!seconds) return 'simulated playback'
+/**
+ * Second line of the generated poster.
+ *
+ * `willPlay` exists because the poster is also the pre-load frame for a video that really does
+ * play from the remote host. Captioning that one "simulated playback" would be a false
+ * statement about the room's own behaviour, briefly visible while the file buffers.
+ */
+function formatDuration(seconds: number | undefined, willPlay: boolean): string {
+  const suffix = willPlay ? 'loading video' : 'simulated playback'
+  if (!seconds) return suffix
   const minutes = Math.floor(seconds / 60)
   const remainder = seconds % 60
-  return `${minutes}:${String(remainder).padStart(2, '0')} · simulated playback`
+  return `${minutes}:${String(remainder).padStart(2, '0')} · ${suffix}`
 }
 
 export interface CatalogSource {
   provider: string
   url: string
+  /**
+   * Absolute URL on the remote media host, present only for the videos that host actually
+   * serves. Written by tools/build-catalog.mjs from catalog/remote-media.json.
+   *
+   * Presence here does not guarantee the visitor can play it: the host currently presents a
+   * certificate from NiCE's internal PKI, so the request fails on any device without the NiCE
+   * corporate root. VideoAsset handles that at runtime rather than pretending otherwise.
+   */
+  remoteUrl?: string
   /** For embeds: the canonical public page, for attribution and as a fallback. */
   watchUrl?: string
   thumbnailUrl?: string
@@ -99,11 +116,17 @@ export function toStageAsset(id: string): StageAsset | null {
   }
 
   // Embeds and documents live at public addresses, so they work everywhere including the static
-  // Pages build. Only locally-served media is withheld when MEDIA_AVAILABLE is false, and it is
-  // withheld entirely rather than emitting a URL that 404s: hasRealSource() then reports false
-  // and the renderer degrades deliberately.
+  // Pages build.
   const isPublic = entry.type === 'embed' || entry.type === 'document'
-  if ((MEDIA_AVAILABLE || isPublic) && entry.source.url) asset.src = entry.source.url
+
+  // Local path first when the files are on disk, so development stays offline and fast and
+  // never depends on the lab host being up. Then the remote host, for the subset of videos it
+  // serves, which is what gives the static Pages build real playback. Anything else gets no
+  // src at all rather than a URL that 404s: hasRealSource() then reports false and the renderer
+  // degrades deliberately to the synthetic clock.
+  const resolved =
+    MEDIA_AVAILABLE || isPublic ? entry.source.url : (entry.source.remoteUrl ?? null)
+  if (resolved) asset.src = resolved
   if (entry.source.watchUrl) asset.watchUrl = entry.source.watchUrl
 
   // Documents are chosen from a card, not watched, so the stage needs the description and the
@@ -117,10 +140,13 @@ export function toStageAsset(id: string): StageAsset | null {
     if (badges.length) asset.badges = badges.slice(0, 6)
   }
 
+  // Generated whenever the local files are absent, including for a video that WILL play from
+  // the remote host: there it serves as the pre-load frame, and as the visible fallback if the
+  // media errors, which is how VideoAsset survives the host being unreachable.
   if (entry.source.thumbnailUrl) {
     asset.posterUrl = entry.source.thumbnailUrl
   } else if (!MEDIA_AVAILABLE && !isPublic) {
-    asset.posterUrl = placeholderImage(entry.title, formatDuration(entry.durationSeconds))
+    asset.posterUrl = placeholderImage(entry.title, formatDuration(entry.durationSeconds, Boolean(resolved)))
   }
 
   if (entry.durationSeconds !== undefined) asset.durationSeconds = entry.durationSeconds

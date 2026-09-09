@@ -364,7 +364,8 @@ messages land, and it gives sales a ranked list of what a given account cared ab
 | Item | Needed for | Owner |
 |---|---|---|
 | Cognigy MCP API key currently returns `401` | Any build in the tenant | Olivier |
-| Where the demo videos live, and whether their URLs are publicly reachable or need signing | Catalog population | Olivier |
+| A publicly-trusted certificate for the media host. 26 videos now stream from `https://stt.nicelab71.com/`, but it presents a certificate chaining to NiCE's internal `Nice Systems RootCA`, so playback works on NiCE corporate devices and fails with a certificate error for every prospect and partner. The room degrades to simulated playback there, so nothing breaks, but remote video cannot be promised in a customer-facing session until this is resolved | Video playback for anyone outside NiCE | Olivier / NiCE IT |
+| The remaining 29 of 55 videos are not on the media host yet | Full catalog playback | Olivier |
 | External-use approval process and named reviewer for the `approved` flag | Go-live | Marketing / Legal |
 | Access to enablement and RFP content for build-time authoring | Knowledge store quality | Olivier |
 | Hosting for the frontend and the retrieval backend | Deployment | Olivier |

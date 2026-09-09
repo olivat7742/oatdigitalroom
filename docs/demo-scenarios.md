@@ -7,11 +7,14 @@ happens.
 [example-questions.md](example-questions.md) is the catalogue of *what the room can answer*.
 This file is the catalogue of *what to run in front of people*.
 
-**Verified against the working tree on 2026-09-08**, including the 90-asset catalog and the
-pre-identified opening. Every expected asset below was run through the real `searchCatalog`
-rather than recalled. If you change the catalog, re-run `node tools/test-retrieval.mjs` and
-re-check the tables here: four steps in the previous version of this file broke silently when
-the catalog grew from 66 assets to 90, which is the whole argument for that check existing.
+**Verified against the pushed catalog on 2026-09-08**, including the pre-identified opening.
+Every expected asset below was run through the real `searchCatalog`, and the 90 assets and 28
+chaptered ones were confirmed live on the raw URL the agent fetches, so every scenario here
+works against the live agent.
+
+If you change the catalog, re-run `node tools/test-retrieval.mjs` and re-check the tables here:
+four steps in the first version of this file broke silently when the catalog grew from 66 assets
+to 90, which is the whole argument for that check existing.
 
 ---
 
@@ -23,7 +26,7 @@ the catalog grew from 66 assets to 90, which is the whole argument for that chec
 |---|---|---|
 | Brain | Real Cognigy agent, real tool calls | Keyword matcher, no model |
 | Phrasing | Free-form | These lines and close variants only |
-| Video | 8 YouTube embeds play; local files play if you have the media | 8 embeds play, the rest are `MOCK ASSET` placeholders |
+| Video | 8 YouTube embeds play; local files play if you have the media | 8 embeds play, plus 26 videos from the remote host **on a NiCE corporate device only**; the rest are `MOCK ASSET` placeholders |
 
 ```bash
 cd app && npm run dev
@@ -44,18 +47,13 @@ npx vite app --mode mock --port 5181
 3. **The CRM and the contact ids are invented.** Four fictional companies. Never imply it is
    reading live Salesforce.
 
-### Two things to settle before demoing the new vertical journeys
-
-**The 24 new demos are not committed.** The live Cognigy agent fetches the catalog from `main`
-on GitHub, so it is still searching the 66-asset copy and cannot see the retail, government,
-healthcare, telco, utilities or FSI journeys. They work in the portal today. Commit and push
-before scenario 4, then poll the raw URL for a string you just added rather than trusting a
-fixed wait: CDN lag has been observed at thirty seconds once and ten minutes another time.
+### One thing to settle before showing the room outside NiCE
 
 **Preview mode is on, and 44 of the 90 assets are `approved: false`.** `PREVIEW_MODE = true` in
 `cognigy/code-nodes/search-catalog.js` makes the retrieval node return unapproved assets and
-tell the agent it is a preview build. That is right for internal demos and it is a decision to
-make consciously before showing the room to an external prospect.
+tell the agent it is a preview build. That is right for internal demos, and it is a decision to
+make consciously before an external prospect sees the room, because the room will happily put an
+unapproved marketing master on the stage.
 
 ---
 
@@ -187,8 +185,7 @@ that does it is an allowlist rather than a style string.
 
 ## Scenario 4: real journeys, by vertical, with chapters
 
-**Audience:** anyone in a named vertical. **Surface:** portal today, live agent after a push.
-**Runs in:** 4 minutes.
+**Audience:** anyone in a named vertical. **Surface:** live agent. **Runs in:** 4 minutes.
 
 **Proves:** the catalog is no longer conference recordings. Twenty-four end-to-end product
 journeys, chaptered, answering the specific questions a buyer in that vertical actually asks.
@@ -215,7 +212,12 @@ area. And the chapter gap is closed: it used to be **four chaptered assets out o
 and is now twenty-eight, which is what makes scenario 5 work on almost anything rather than on a
 shortlist.
 
-**The live agent cannot see any of this yet.** See the push note at the top of this file.
+**Worth saying, if the room is technical: a push to `main` is a deploy.** The agent fetches the
+catalog from GitHub at query time rather than carrying a copy, which is why these journeys became
+answerable the moment they were pushed, with no change in the tenant at all. That is also the
+trap: the next time you add an asset and the agent cannot find it, the catalog is fine and the
+CDN has not caught up. Poll the raw URL for a string you just added rather than trusting a fixed
+wait, because the lag has been thirty seconds once and ten minutes another time.
 
 ---
 
