@@ -42,6 +42,7 @@ export function ChatRail() {
   const agentTyping = useSessionStore((s) => s.agentTyping)
   const connection = useSessionStore((s) => s.connection)
   const send = useSessionStore((s) => s.sendVisitorMessage)
+  const showAssetById = useSessionStore((s) => s.showAssetById)
 
   const [draft, setDraft] = useState('')
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -163,7 +164,15 @@ export function ChatRail() {
               >
                 <Chip
                   label={item.label}
-                  onClick={() => submit(item.value)}
+                  // A chip that names an asset shows it here, before anything is sent. The
+                  // model still gets the text and still replies, but it is no longer the
+                  // thing standing between a button and the document it is labelled with.
+                  // Order matters: show first, so the stage is already right by the time the
+                  // reply lands, and an unresolvable id simply falls through to the send.
+                  onClick={() => {
+                    if (item.assetId) showAssetById(item.assetId)
+                    submit(item.value)
+                  }}
                   // Spoken in full regardless of the tooltip: a tooltip is hover-only, and a
                   // screen reader would otherwise read a truncated label ending in an ellipsis.
                   aria-label={item.value}

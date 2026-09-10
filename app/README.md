@@ -190,6 +190,35 @@ stays the full title, because that is what retrieval matches on and what
 `tools/test-retrieval.mjs` asserts works. Truncation is the fallback, not the method. The rule
 lives in `ctaLabel` and is mirrored in `cognigy/code-nodes/search-catalog.js`.
 
+### A button that names an asset shows that asset
+
+A cta from `find_demo` also carries `assetId`, and that is what makes it a button rather than
+pre-typed text. Clicking one calls `showAssetById`, which resolves the id against the bundled
+catalog and puts the asset on the stage in about 100ms, before anything is sent. The visitor's
+text is still sent afterwards so the agent can comment, but the model is no longer standing
+between a button and the thing it is labelled with.
+
+This was a live bug, and it is worth keeping the shape of it in mind. A visitor tapped a chip
+labelled "Everest Group Global CCaaS PEAK Matrix 2026" and the agent replied "That is a report,
+not a demo. You can open it on nice.com" without ever calling `show_demo`. With no directive
+the portal had no asset to hang the document card, the source row or the references on, so the
+reply told the visitor to open something and gave them nothing to open. The generic fallback
+links were suppressed too, because the same three had appeared a few turns earlier.
+
+Question chips carry no `assetId` and are unchanged: industry, department and the interest
+examples name no asset, so they post their text exactly as before.
+
+**An explicit tap outranks the model.** After a tapped asset is shown, the next agent turn is
+not allowed to move the stage to a *different* asset; the directive is downgraded to `offer`,
+so its reply and its buttons still arrive and only the contradiction is dropped. Without that
+the fix caused a worse bug than it solved: the chip put the right asset up in 60ms and the
+agent's reply, having searched the button's text for itself, swapped it for another one a
+second later. The lock lasts exactly one turn, and a same-asset directive still passes so the
+agent can open it at a recommended chapter.
+
+`tools/test-cognigy-nodes.mjs` asserts the node emits an `assetId` on every asset button, that
+each one is a real catalog id, and that it matches the asset the button is labelled with.
+
 **The reply must not repeat the buttons.** Two fixes were needed for that, in order:
 `store_visitor_profile` used to instruct the agent to "offer exactly three example questions",
 which fought the new buttons, so the visitor read a paragraph and then found the identical three

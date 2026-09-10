@@ -258,8 +258,15 @@ if (!payload || !Array.isArray(payload.assets)) {
   if (strongMatches.length > 0) {
     const projected = strongMatches.slice(0, maxResults).map(project);
 
+    // assetId is what makes these buttons deterministic. Without it a button is only
+    // pre-typed text: the portal sends the title back and the model decides all over again,
+    // so a chip naming one exact document could be answered with a definition instead of the
+    // document. Observed live on the Everest Group report, which left the visitor a reply
+    // saying "you can open it on nice.com" and nothing to click. With the id the portal shows
+    // the asset itself and this tool's own instruction to call show_demo stops being the only
+    // thing standing between the visitor and the thing they tapped.
     const buttons = projected.slice(0, 3).map(function (m) {
-      return { label: ctaLabel(m.title), value: m.title, kind: 'quick_reply' };
+      return { label: ctaLabel(m.title), value: m.title, kind: 'quick_reply', assetId: m.assetId };
     });
     if (buttons.length > 0) {
       try {

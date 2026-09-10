@@ -107,6 +107,22 @@ export interface Cta {
   label: string
   value: string
   kind: CtaKind
+  /**
+   * The catalog asset this button names, when it names one.
+   *
+   * Without it a button is only pre-typed text: clicking sends `value` back and the model
+   * decides again what to do, so a chip labelled with one exact document could be answered
+   * with a definition instead of the document. That happened live: the visitor tapped
+   * "Everest Group Global CCaaS PEAK Matrix 2026" and got "That is a report, not a demo"
+   * with nothing to click, because the model never called show_demo.
+   *
+   * With it, the portal shows that asset itself and the model is no longer in the loop for
+   * the display. The model still chooses WHICH assets to offer; the button just stops the
+   * choice being re-litigated on the way back.
+   *
+   * Absent on question chips (industry, department, interest examples), which name no asset.
+   */
+  assetId?: string
 }
 
 /** A public link offered under an agent reply so the visitor can read more later. */
@@ -195,6 +211,43 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Catalog ids are lowercase kebab, so anything else is not one and is dropped.
+ *
+ * This is a shape check, not the security boundary. The real boundary is that an assetId is
+ * only ever used to LOOK UP an entry in the bundled catalog: an id that matches nothing
+ * resolves to null and the chip falls back to sending its text. So an id can never become a
+ * URL, a path or anything rendered raw, whatever it contains. The pattern exists to stop
+ * absurd values reaching the lookup at all, and to keep the contract honest about the shape.
+ */
+const ASSET_ID = /^[a-z0-9][a-z0-9-]{0,127}$/
+
+/**
+ * Validates one cta item.
+ *
+ * The whole array used to be cast straight through with no per-field checking. That was
+ * survivable while a cta was inert text, and stopped being survivable once one of its fields
+ * drives an asset lookup, so the fields are checked individually now. A malformed item is
+ * dropped rather than the whole strip, since losing one button beats losing all of them.
+ */
+function parseCta(value: unknown): Cta | null {
+  if (!isRecord(value)) return null
+  const label = value['label']
+  const text = value['value']
+  const kind = value['kind']
+  if (typeof label !== 'string' || !label) return null
+  if (typeof text !== 'string' || !text) return null
+  if (typeof kind !== 'string') return null
+
+  const assetId = value['assetId']
+  return {
+    label,
+    value: text,
+    kind: kind as CtaKind,
+    ...(typeof assetId === 'string' && ASSET_ID.test(assetId) ? { assetId } : {}),
+  }
+}
+
+/**
  * Pulls a directive out of a message `data` payload, or returns null.
  *
  * Deliberately strict. An unrecognised version is ignored rather than guessed at, because a
@@ -252,7 +305,9 @@ export function extractDirective(data: unknown): StageDirective | null {
     tour: isRecord(envelope['tour']) ? (envelope['tour'] as unknown as TourInfo) : undefined,
     // Twelve, not four, only because the industry picker is a closed list of twelve. Three or
     // four remains the convention for a conversational follow-up; see the contract.
-    cta: Array.isArray(envelope['cta']) ? (envelope['cta'] as Cta[]).slice(0, 12) : undefined,
+    cta: Array.isArray(envelope['cta'])
+      ? envelope['cta'].slice(0, 12).map(parseCta).filter((item): item is Cta => item !== null)
+      : undefined,
   }
 }
 

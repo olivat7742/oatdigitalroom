@@ -29,6 +29,7 @@ const read = (p) => fs.readFileSync(path.join(repo, p), 'utf8')
 
 const profileSrc = read('cognigy/code-nodes/store-visitor-profile.js')
 const lookupSrc = read('cognigy/code-nodes/lookup-crm-postprocess.js')
+const searchSrc = read('cognigy/code-nodes/search-catalog.js')
 const fixtures = JSON.parse(read('catalog/crm-fixtures.json'))
 const industries = JSON.parse(read('catalog/industries.json'))
 
@@ -347,6 +348,65 @@ console.log('\nstore_visitor_profile: recording the answer')
   check('and its source', payload?.industrySource === 'asked', payload?.industrySource)
   const CONTRACT = ['v','firstName','lastName','company','jobTitle','email','website','department','interest','industry','industrySource','audience','onBehalfOf','introductionComplete']
   check('and emits no field the contract forbids', Object.keys(payload ?? {}).every((k) => CONTRACT.includes(k)), Object.keys(payload ?? {}))
+}
+
+console.log('\nsearch_catalog: the buttons name the asset, not just its title')
+{
+  // THE BUG THIS EXISTS FOR. A cta used to carry only label, value and kind, so a button was
+  // pre-typed text and nothing more: clicking sent the title back and the model decided all
+  // over again what to do with it. Observed live on the Everest Group report. The visitor
+  // tapped a chip naming that exact document and the agent replied "That is a report, not a
+  // demo. You can open it on nice.com", never calling show_demo, so the portal had no asset
+  // to hang a card, a source row or a link on. The reply told them to open something and gave
+  // them nothing to open. assetId removes the model from that path entirely.
+  const catalog = JSON.parse(read('catalog/demo-catalog.json'))
+  const ids = new Set(catalog.assets.map((a) => a.id))
+
+  const runSearch = (toolArgs) => {
+    const input = { aiAgent: { toolArgs }, catalogFetch: catalog }
+    const outputs = []
+    const actions = { output: (text, data) => outputs.push({ text, data }), setContext: () => {} }
+    new Function('input', 'context', 'actions', 'profile', searchSrc)(input, {}, actions, {})
+    const offer = outputs.find((o) => o.data && o.data._showroom)?.data._showroom
+    return { result: input.result, cta: offer?.cta ?? [], offer }
+  }
+
+  // `every` on an empty array is true, so each of these requires a non-empty strip as well.
+  // Without that the whole section passed vacuously the first time it ran, on a harness that
+  // was passing the wrong argument name and getting no buttons at all.
+  const all = (list, predicate) => list.length > 0 && list.every(predicate)
+
+  const found = runSearch({ intent: 'supervisor coaching and monitoring' })
+  check('a search offers buttons', found.cta.length > 0, found.cta)
+  check('as an offer, which touches nothing on the stage', found.offer?.action === 'offer')
+  check('every button carries an assetId', all(found.cta, (c) => typeof c.assetId === 'string' && c.assetId), found.cta)
+  check('and every assetId is a real catalog id', all(found.cta, (c) => ids.has(c.assetId)), found.cta.map((c) => c.assetId))
+  check(
+    'the id matches the asset the button is labelled with',
+    all(found.cta, (c) => {
+      const asset = catalog.assets.find((a) => a.id === c.assetId)
+      return asset && asset.title === c.value
+    }),
+    found.cta,
+  )
+  check('label, value and kind still survive', all(found.cta, (c) => c.label && c.value && c.kind === 'quick_reply'), found.cta)
+
+  // The exact live failure, now checked directly rather than by analogy.
+  const everest = runSearch({ intent: 'what do analysts say about NiCE for CCaaS' })
+  const chip = everest.cta.find((c) => /everest/i.test(c.value))
+  check('the Everest report is offered as a button', Boolean(chip), everest.cta)
+  check(
+    'and that button carries the id the portal needs to show it',
+    chip?.assetId === 'everest-group-global-ccaas-peak-matrix-2026',
+    chip,
+  )
+
+  // The portal resolves an assetId against the catalog and ignores anything it does not know,
+  // so the ids must stay real. A renamed asset would otherwise turn a button back into text
+  // silently, which is the regression this pair of checks is here to catch.
+  const doc = catalog.assets.find((a) => a.id === chip?.assetId)
+  check('the asset it names is a document', doc?.type === 'document', doc?.type)
+  check('with a public URL for the portal to link', Boolean(doc?.source?.watchUrl), doc?.source)
 }
 
 console.log(`\n${failed === 0 ? 'all checks passed' : `${failed} FAILED`}`)

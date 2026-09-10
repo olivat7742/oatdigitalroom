@@ -67,11 +67,21 @@ export function ctaLabel(title: string, max = 30): string {
   return base.length > max ? `${base.slice(0, max - 1).trimEnd()}…` : base
 }
 
+/**
+ * `id` carries through as `assetId` so a mock chip is as deterministic as a live one. Mock
+ * mode is only evidence about the real thing while the two behave the same way, and this is
+ * the surface the published Pages build demonstrates, so it cannot be the weaker one.
+ */
 export function ctaFromAssets(
-  assets: { title: string }[],
+  assets: { id: string; title: string }[],
   kind: Cta['kind'] = 'quick_reply',
 ): Cta[] {
-  return assets.map((asset) => ({ label: ctaLabel(asset.title), value: asset.title, kind }))
+  return assets.map((asset) => ({
+    label: ctaLabel(asset.title),
+    value: asset.title,
+    kind,
+    assetId: asset.id,
+  }))
 }
 
 /**

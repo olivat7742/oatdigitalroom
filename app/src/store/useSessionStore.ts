@@ -12,6 +12,7 @@ import {
 import type { ConnectionState, InboundMessage, Transport } from '@/transport/types'
 import { DEFAULT_REFERENCES } from '@/references'
 import { extractVisitor, type Visitor } from '@/types/visitor'
+import { toStageAsset } from '@/catalog'
 
 export type MessageRole = 'agent' | 'visitor' | 'narration' | 'system'
 
@@ -92,6 +93,12 @@ interface SessionState {
 
   attachTransport: (transport: Transport) => void
   sendVisitorMessage: (text: string) => void
+  /**
+   * Puts a catalog asset on the stage without waiting on the agent, for a button that names
+   * one. Returns false if the id resolves to nothing, so the caller can fall back to sending
+   * the button's text like any other chip.
+   */
+  showAssetById: (assetId: string) => boolean
   setStepIndex: (index: number) => void
   setPlaying: (playing: boolean) => void
   enterChapter: (chapterIndex: number) => void
@@ -208,12 +215,82 @@ function skippedChapterKeys(directive: StageDirective): Set<string> {
   return skipped
 }
 
+/**
+ * The takeaways entry for an asset that has just been put on the stage, or null if it is
+ * already recorded.
+ *
+ * Extracted so the agent's own directive and a visitor tapping an asset button record a view
+ * identically. When this was inline in the inbound handler, adding the second path would have
+ * meant a second copy of the same six fields, and the two would have drifted the first time
+ * one of them gained a field.
+ */
+/**
+ * The same directive with its stage move removed, keeping everything that is not the stage.
+ *
+ * Used when the agent tries to display something other than what the visitor just tapped.
+ * Downgrading to 'offer' rather than dropping the directive outright is the point: 'offer' is
+ * already defined as the action that touches nothing on the stage, so the buttons and the
+ * tour still reach the visitor and only the contradiction is lost.
+ */
+function stripStageChange(directive: StageDirective): StageDirective {
+  const { asset: _asset, position: _position, ...rest } = directive
+  return { ...rest, action: 'offer' }
+}
+
+function viewedEntry(seen: ViewedAsset[], asset: StageAsset): ViewedAsset | null {
+  if (seen.some((item) => item.assetId === asset.id)) return null
+  return {
+    assetId: asset.id,
+    title: asset.title ?? asset.id,
+    ...(asset.durationSeconds !== undefined ? { durationSeconds: asset.durationSeconds } : {}),
+    ...(asset.watchUrl ? { watchUrl: asset.watchUrl } : {}),
+    ...(asset.references?.length ? { references: asset.references } : {}),
+  }
+}
+
 export const useSessionStore = create<SessionState>((set, get) => {
   let transport: Transport | null = null
 
+  /**
+   * The asset the visitor just chose by tapping a button, held until the agent's next turn.
+   *
+   * A tap is an explicit decision, and the model does not get to overrule it. Without this
+   * the fix for the missing-link bug introduced a worse one: the chip put the right asset on
+   * the stage in about 60ms, then the agent's reply arrived a second later having searched
+   * the button's text for itself, and replaced it with a different asset. The visitor saw the
+   * thing they asked for flicker and turn into something else.
+   *
+   * Only a show or play naming a DIFFERENT asset is refused. The same asset is let through,
+   * so the agent can still open it at a recommended chapter, and every other action, seek,
+   * pause, highlight, wrapup, is untouched.
+   */
+  let tappedAsset: string | null = null
+
   function handleInbound(inbound: InboundMessage): void {
-    const directive = extractDirective(inbound.data)
+    const parsed = extractDirective(inbound.data)
     const visitorUpdate = extractVisitor(inbound.data)
+
+    // Refuse a stage move that contradicts what the visitor just tapped. The reply itself,
+    // its buttons and its visitor payload all still apply: only the contradicting stage
+    // change is dropped, so the agent can talk about whatever it likes.
+    const contradicts =
+      tappedAsset !== null &&
+      parsed !== null &&
+      (parsed.action === 'show' || parsed.action === 'play') &&
+      parsed.asset !== undefined &&
+      parsed.asset.id !== tappedAsset
+
+    if (contradicts && parsed) {
+      console.warn(
+        `[showroom] ignoring stage change to "${parsed.asset?.id}": the visitor tapped "${tappedAsset}"`,
+      )
+    }
+    // The lock lasts exactly one agent turn. A reply arriving at all means the agent has had
+    // its say about the tap, and anything after that is a new decision the visitor can see
+    // coming.
+    if (inbound.text) tappedAsset = null
+
+    const directive = contradicts && parsed ? stripStageChange(parsed) : parsed
 
     set((state) => {
       const next: Partial<SessionState> = {}
@@ -273,23 +350,9 @@ export const useSessionStore = create<SessionState>((set, get) => {
         // rather than in each transport means every path that shows something is recorded
         // without having to remember to record it.
         const shown = directive.asset
-        if (
-          shown &&
-          (directive.action === 'show' || directive.action === 'play') &&
-          !state.seen.some((item) => item.assetId === shown.id)
-        ) {
-          next.seen = [
-            ...state.seen,
-            {
-              assetId: shown.id,
-              title: shown.title ?? shown.id,
-              ...(shown.durationSeconds !== undefined
-                ? { durationSeconds: shown.durationSeconds }
-                : {}),
-              ...(shown.watchUrl ? { watchUrl: shown.watchUrl } : {}),
-              ...(shown.references?.length ? { references: shown.references } : {}),
-            },
-          ]
+        if (shown && (directive.action === 'show' || directive.action === 'play')) {
+          const entry = viewedEntry(state.seen, shown)
+          if (entry) next.seen = [...state.seen, entry]
         }
 
         // The takeaways are the point of the wrap-up, so the tray opens itself to show them.
@@ -343,6 +406,41 @@ export const useSessionStore = create<SessionState>((set, get) => {
       // Clearing cta on send stops the visitor clicking a button that the next turn replaces.
       set((state) => ({ messages: [...state.messages, message('visitor', trimmed)], cta: [] }))
       transport.send(trimmed)
+    },
+
+    /**
+     * Shows the asset a button names, immediately and without consulting the agent.
+     *
+     * Resolution goes through the bundled catalog, the same path CognigyTransport already
+     * uses for the asset ids the agent sends. An id that matches nothing returns false and
+     * the caller sends the button's text instead, so an unknown id degrades to exactly
+     * today's behaviour rather than to a dead button.
+     *
+     * The visitor's message is still sent alongside this by the caller, so the agent can
+     * comment on the choice and the conversation stays coherent. Display and commentary are
+     * deliberately separated: the display is guaranteed, the commentary is the model's job.
+     * If the agent then shows the same asset the directive is idempotent and nothing moves.
+     */
+    showAssetById(assetId: string): boolean {
+      const asset = toStageAsset(assetId)
+      if (!asset) {
+        console.warn(`[showroom] cta named unknown asset "${assetId}", falling back to text`)
+        return false
+      }
+
+      const directive: StageDirective = { v: 1, action: 'show', asset }
+      set((state) => {
+        const entry = viewedEntry(state.seen, asset)
+        return {
+          stage: applyDirective(state.stage, directive),
+          narratedChapters: skippedChapterKeys(directive),
+          ...(entry ? { seen: [...state.seen, entry] } : {}),
+        }
+      })
+      // Held until the agent has replied once, so its own idea of what to show cannot
+      // silently replace the visitor's explicit choice a second later.
+      tappedAsset = assetId
+      return true
     },
 
     setStepIndex(index: number) {
